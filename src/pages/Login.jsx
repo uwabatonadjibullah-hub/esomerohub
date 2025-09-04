@@ -9,9 +9,13 @@ const quotes = [
   "Your future is just one click away."
 ];
 
+const mockUserRoles = {
+  'adminuser': 'Admin',
+  'traineeuser': 'Trainee'
+};
+
 const Login = () => {
   const navigate = useNavigate();
-  const [quoteIndex, setQuoteIndex] = useState(0);
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -25,8 +29,8 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const { username, password } = formData;
+
     if (!username || !password) {
       setError('Please fill in both fields.');
       return;
@@ -37,18 +41,31 @@ const Login = () => {
       return;
     }
 
-    // Simulate login logic (e.g., Firebase Auth)
     const email = `${username}@gmail.com`;
     console.log('Logging in with:', email);
 
-    // Redirect to dashboard or home
-    navigate('/dashboard');
+    // Simulate role lookup
+    const role = mockUserRoles[username.toLowerCase()];
+
+    if (!role) {
+      setError('User role not found. Please check your credentials.');
+      return;
+    }
+
+    // Redirect based on role
+    if (role === 'Admin') {
+      navigate('/admin');
+    } else if (role === 'Trainee') {
+      navigate('/trainee');
+    } else {
+      setError('Invalid role detected.');
+    }
   };
 
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2 className="quote">{quotes[quoteIndex]}</h2>
+        <h2 className="quote">{quotes[0]}</h2>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -62,6 +79,11 @@ const Login = () => {
             placeholder="Password"
             onChange={handleChange}
           />
+          {formData.username && (
+            <p className="email-preview">
+              Logging in as: <strong>{formData.username}@gmail.com</strong>
+            </p>
+          )}
           {error && <p className="error">{error}</p>}
           <button type="submit" className="btn gold">Login</button>
         </form>

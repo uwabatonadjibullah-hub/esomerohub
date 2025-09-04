@@ -1,6 +1,9 @@
 // src/pages/Signup.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../firebase'; // Make sure firebase.js is configured
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import './Signup.css';
 
 const quotes = [
@@ -11,7 +14,6 @@ const quotes = [
 
 const Signup = () => {
   const navigate = useNavigate();
-  const [quoteIndex, setQuoteIndex] = useState(0);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -23,14 +25,14 @@ const Signup = () => {
   });
 
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     const { firstName, lastName, username, password, gender, faculty, role } = formData;
 
     if (!firstName || !lastName || !username || !password || !gender || !faculty || !role) {
@@ -44,45 +46,46 @@ const Signup = () => {
     }
 
     const email = `${username}@gmail.com`;
-    console.log('Creating user:', { ...formData, email });
 
-    navigate('/login');
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+
+      await setDoc(doc(db, 'users', uid), {
+        firstName,
+        lastName,
+        email,
+        gender,
+        faculty,
+        role,
+        createdAt: new Date()
+      });
+
+      await sendEmailVerification(userCredential.user);
+      setSuccess('Signup successful! Please check your inbox to verify your email.');
+      setError('');
+
+      setTimeout(() => navigate('/login'), 3000);
+    } catch (err) {
+      setError(err.message);
+      setSuccess('');
+    }
   };
 
   return (
     <div className="signup-container">
       <div className="signup-box">
-        <h2 className="quote">{quotes[quoteIndex]}</h2>
+        <h2 className="quote">{quotes[0]}</h2>
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            name="firstName"
-            placeholder="First Name"
-            onChange={handleChange}
-          />
-          <input
-            type="text"
-            name="lastName"
-            placeholder="Last Name"
-            onChange={handleChange}
-          />
-          <input
-            type="text"
-            name="username"
-            placeholder="Username"
-            onChange={handleChange}
-          />
+          <input type="text" name="firstName" placeholder="First Name" onChange={handleChange} />
+          <input type="text" name="lastName" placeholder="Last Name" onChange={handleChange} />
+          <input type="text" name="username" placeholder="Username" onChange={handleChange} />
           {formData.username && (
             <p className="email-preview">
               Your email will be: <strong>{formData.username}@gmail.com</strong>
             </p>
           )}
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            onChange={handleChange}
-          />
+          <input type="password" name="password" placeholder="Password" onChange={handleChange} />
           <select name="gender" onChange={handleChange}>
             <option value="">Select Gender</option>
             <option value="Male">Male</option>
@@ -99,6 +102,7 @@ const Signup = () => {
             <option value="Trainee">Trainee</option>
           </select>
           {error && <p className="error">{error}</p>}
+          {success && <p className="success">{success}</p>}
           <button type="submit" className="btn gold">Sign Up</button>
         </form>
       </div>
