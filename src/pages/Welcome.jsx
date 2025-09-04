@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Welcome.css';
-import BG1 from '../assets/images/BG1.jpg';
-import BG2 from '../assets/images/BG2.jpg';
-import BG3 from '../assets/images/BG3.jpg';
-import Logo from '../assets/images/Logo.png';
+import BG1 from '../assets/BG1.jpg';
+import BG2 from '../assets/BG2.jpg';
+import BG3 from '../assets/BG3.jpg';
+import Logo from '../assets/Logo.png';
 
 const backgrounds = [BG1, BG2, BG3];
 const quotes = [
