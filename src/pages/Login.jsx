@@ -1,6 +1,9 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import './Login.css';
 
 const quotes = [
@@ -8,11 +11,6 @@ const quotes = [
   "Every login is a step toward mastery.",
   "Your future is just one click away."
 ];
-
-const mockUserRoles = {
-  'adminuser@gmail.com': 'Admin',
-  'traineeuser@gmail.com': 'Trainee'
-};
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,12 +20,13 @@ const Login = () => {
   });
 
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const { email, password } = formData;
 
@@ -41,23 +40,37 @@ const Login = () => {
       return;
     }
 
-    console.log('Logging in with:', email);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-    // Simulate role lookup
-    const role = mockUserRoles[email.toLowerCase()];
+      if (!user.emailVerified) {
+        setError('Please verify your email before logging in.');
+        return;
+      }
 
-    if (!role) {
-      setError('User role not found. Please check your credentials.');
-      return;
-    }
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        setError('User profile not found.');
+        return;
+      }
 
-    // Redirect based on role
-    if (role === 'Admin') {
-      navigate('/admin');
-    } else if (role === 'Trainee') {
-      navigate('/trainee');
-    } else {
-      setError('Invalid role detected.');
+      const role = userDoc.data().role;
+      setSuccess('Login successful! Redirecting...');
+      setError('');
+
+      setTimeout(() => {
+        if (role === 'Admin') {
+          navigate('/admin');
+        } else if (role === 'Trainee') {
+          navigate('/trainee');
+        } else {
+          setError('Invalid role detected.');
+        }
+      }, 1500);
+    } catch (err) {
+      setError(err.message);
+      setSuccess('');
     }
   };
 
@@ -79,6 +92,7 @@ const Login = () => {
             onChange={handleChange}
           />
           {error && <p className="error">{error}</p>}
+          {success && <p className="success">{success}</p>}
           <button type="submit" className="btn gold">Login</button>
         </form>
         <p className="signup-link">
