@@ -42,7 +42,7 @@ const Welcome = () => {
       <div className="overlay">
         <img src={Logo} alt="Esomeerhub Logo" className="logo" />
         <h1 className="quote">{quotes[quoteIndex]}</h1>
-        <p className="subtext">Welcome to Esomeerhub — your journey starts here.</p>
+        <p className="subtext">Welcome to Esomerohub — your journey starts here.</p>
         <div className="button-group">
           <button className="btn gold" onClick={() => navigate('/login')}>Login</button>
           <button className="btn white" onClick={() => navigate('/signup')}>Sign Up</button>
