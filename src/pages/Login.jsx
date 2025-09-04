@@ -10,14 +10,14 @@ const quotes = [
 ];
 
 const mockUserRoles = {
-  'adminuser': 'Admin',
-  'traineeuser': 'Trainee'
+  'adminuser@gmail.com': 'Admin',
+  'traineeuser@gmail.com': 'Trainee'
 };
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
 
@@ -29,9 +29,9 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { username, password } = formData;
+    const { email, password } = formData;
 
-    if (!username || !password) {
+    if (!email || !password) {
       setError('Please fill in both fields.');
       return;
     }
@@ -41,11 +41,10 @@ const Login = () => {
       return;
     }
 
-    const email = `${username}@gmail.com`;
     console.log('Logging in with:', email);
 
     // Simulate role lookup
-    const role = mockUserRoles[username.toLowerCase()];
+    const role = mockUserRoles[email.toLowerCase()];
 
     if (!role) {
       setError('User role not found. Please check your credentials.');
@@ -68,9 +67,9 @@ const Login = () => {
         <h2 className="quote">{quotes[0]}</h2>
         <form onSubmit={handleSubmit}>
           <input
-            type="text"
-            name="username"
-            placeholder="Username"
+            type="email"
+            name="email"
+            placeholder="Email"
             onChange={handleChange}
           />
           <input
@@ -79,11 +78,6 @@ const Login = () => {
             placeholder="Password"
             onChange={handleChange}
           />
-          {formData.username && (
-            <p className="email-preview">
-              Logging in as: <strong>{formData.username}@gmail.com</strong>
-            </p>
-          )}
           {error && <p className="error">{error}</p>}
           <button type="submit" className="btn gold">Login</button>
         </form>
