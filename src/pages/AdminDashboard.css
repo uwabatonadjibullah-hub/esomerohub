@@ -1,0 +1,46 @@
+.admin-dashboard {
+  background-color: #000;
+  color: #fff;
+  padding: 40px;
+}
+
+.faculty-section {
+  margin-bottom: 60px;
+}
+
+.faculty-title {
+  font-size: 2rem;
+  color: #d4af37;
+  margin-bottom: 20px;
+}
+
+.program-block {
+  margin-bottom: 40px;
+}
+
+.program-title {
+  font-size: 1.5rem;
+  color: #d4af37;
+  margin-bottom: 10px;
+}
+
+.module-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1a1a1a;
+}
+
+.module-table th,
+.module-table td {
+  border: 1px solid #333;
+  padding: 10px;
+  text-align: center;
+}
+
+.avg-row td,
+.report-row td,
+.best-row td {
+  background-color: #111;
+  font-weight: bold;
+  color: #d4af37;
+}

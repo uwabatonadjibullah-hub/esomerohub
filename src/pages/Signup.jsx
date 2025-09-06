@@ -1,7 +1,7 @@
 // src/pages/Signup.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, db } from '../firebase'; // Make sure firebase.js is configured
+import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import './Signup.css';
@@ -21,7 +21,8 @@ const Signup = () => {
     password: '',
     gender: '',
     faculty: '',
-    role: ''
+    role: '',
+    program: ''
   });
 
   const [error, setError] = useState('');
@@ -33,9 +34,9 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { firstName, lastName, username, password, gender, faculty, role } = formData;
+    const { firstName, lastName, username, password, gender, faculty, role, program } = formData;
 
-    if (!firstName || !lastName || !username || !password || !gender || !faculty || !role) {
+    if (!firstName || !lastName || !username || !password || !gender || !faculty || !role || !program) {
       setError('Please fill in all fields.');
       return;
     }
@@ -58,6 +59,7 @@ const Signup = () => {
         gender,
         faculty,
         role,
+        program,
         createdAt: new Date()
       });
 
@@ -95,6 +97,12 @@ const Signup = () => {
             <option value="">Select Faculty</option>
             <option value="FILMMAKING AND VIDEO PRODUCTION">FILMMAKING AND VIDEO PRODUCTION</option>
             <option value="MULTIMEDIA PRODUCTION">MULTIMEDIA PRODUCTION</option>
+          </select>
+          <select name="program" onChange={handleChange}>
+            <option value="">Select Program</option>
+            <option value="Day">Day</option>
+            <option value="Night">Night</option>
+            <option value="Weekend">Weekend</option>
           </select>
           <select name="role" onChange={handleChange}>
             <option value="">Select Role</option>

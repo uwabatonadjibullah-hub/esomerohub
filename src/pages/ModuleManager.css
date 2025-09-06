@@ -1,0 +1,73 @@
+.module-manager-container {
+  background-color: #000;
+  color: #fff;
+  min-height: 100vh;
+  padding: 40px;
+}
+
+.page-title {
+  color: #d4af37;
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.module-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.module-form input {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 1rem;
+}
+
+.module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.module-card {
+  background-color: #1a1a1a;
+  border-left: 4px solid #d4af37;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.module-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  background-color: #333;
+  color: #d4af37;
+  border: 2px solid #d4af37;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn.gold {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.confirm-box {
+  margin-top: 10px;
+  background-color: #111;
+  padding: 10px;
+  border-left: 4px solid #d4af37;
+  color: #fff;
+}
+
+.btn.red {
+  background-color: #330000;
+  color: #ff4d4d;
+  border: 2px solid #ff4d4d;
+}

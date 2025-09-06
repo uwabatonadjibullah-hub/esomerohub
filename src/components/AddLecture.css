@@ -1,0 +1,58 @@
+.add-lecture-container {
+  background-color: #000;
+  color: #fff;
+  min-height: 100vh;
+  padding: 40px;
+}
+
+.page-title {
+  color: #d4af37;
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.lecture-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.lecture-form input {
+  padding: 12px;
+  border-radius: 6px;
+  border: none;
+  font-size: 1rem;
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+.btn {
+  background-color: #1a1a1a;
+  color: #d4af37;
+  border: 2px solid #d4af37;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.btn.gold {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.success {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.error {
+  color: #f44336;
+  font-weight: bold;
+}
