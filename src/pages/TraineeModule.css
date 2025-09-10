@@ -1,0 +1,88 @@
+.trainee-module-container {
+  background-color: #000;
+  color: #fff;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.page-title {
+  color: #d4af37;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.module-card {
+  background-color: #111;
+  border-left: 5px solid #d4af37;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+.module-title {
+  color: #d4af37;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.section {
+  margin-top: 1rem;
+}
+
+.section-title {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.lecture-list,
+.quiz-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.lecture-list li,
+.quiz-list li {
+  margin-bottom: 0.5rem;
+}
+
+.quiz-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status {
+  font-weight: bold;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}
+
+.status.done {
+  color: #ccc;
+}
+
+.status.coming {
+  color: #d4af37;
+}
+
+.status.future {
+  color: #999;
+}
+
+.btn.gold {
+  background-color: #d4af37;
+  color: #000;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.empty-message,
+.empty-sub {
+  color: #aaa;
+  font-style: italic;
+}

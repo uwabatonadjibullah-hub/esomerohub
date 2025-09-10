@@ -1,0 +1,44 @@
+.dashboard-container {
+  background-color: #000;
+  color: #fff;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.dashboard-title {
+  color: #d4af37;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.trainee-info {
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #111;
+  color: #fff;
+}
+
+.score-table th,
+.score-table td {
+  border: 1px solid #333;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.score-table th {
+  background-color: #222;
+  color: #d4af37;
+}
+
+.average-row td,
+.rank-row td {
+  background-color: #1a1a1a;
+  color: #d4af37;
+  font-weight: bold;
+}

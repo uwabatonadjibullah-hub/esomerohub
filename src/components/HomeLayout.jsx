@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './HomeLayout.css';
 import ProfileIcon from '../assets/profile.png';
 
-const HomeLayout = ({ title, buttons, background, quote }) => {
+const HomeLayout = ({ title, buttons, background, quote, onProfileClick }) => {
   const navigate = useNavigate();
 
   const handleNavigation = (label) => {
@@ -25,7 +25,12 @@ const HomeLayout = ({ title, buttons, background, quote }) => {
     >
       <div className="top-bar">
         <h1 className="home-title">{title}</h1>
-        <img src={ProfileIcon} alt="Profile" className="profile-icon" />
+        <img
+          src={ProfileIcon}
+          alt="Profile"
+          className="profile-icon"
+          onClick={onProfileClick}
+        />
       </div>
 
       <div className="quote-box">

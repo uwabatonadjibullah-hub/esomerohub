@@ -1,0 +1,47 @@
+.upcoming-quizzes-container {
+  background-color: #000;
+  color: #fff;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.page-title {
+  color: #d4af37;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.empty-message {
+  text-align: center;
+  color: #aaa;
+  font-style: italic;
+}
+
+.quiz-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.quiz-card {
+  background-color: #111;
+  border-left: 5px solid #d4af37;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+.quiz-title {
+  color: #d4af37;
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.quiz-module,
+.quiz-time,
+.quiz-duration {
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 0.3rem;
+}

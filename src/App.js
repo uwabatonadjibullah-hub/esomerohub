@@ -9,8 +9,13 @@ import TraineeHome from './pages/TraineeHome';
 import Announcements from './pages/Announcements';
 import ModuleManager from './pages/ModuleManager';
 import CreateQuiz from './pages/CreateQuiz';
-import AddLecture from './components/AddLecture'; // assuming it's in components
-import AdminDashboard from './pages/AdminDashboard'; // new dashboard page
+import AddLecture from './components/AddLecture';
+import AdminDashboard from './pages/AdminDashboard';
+import TraineeAnnouncements from './pages/TraineeAnnouncements';
+import TraineeModule from './pages/TraineeModule';
+import TraineeDashboard from './pages/TraineeDashboard'; // ✅ NEW
+import UpcomingQuizzes from './pages/UpcomingQuizzes';   // ✅ NEW
+import TakeQuiz from './pages/TakeQuiz';                 // ✅ NEW
 
 function App() {
   return (
@@ -30,6 +35,11 @@ function App() {
 
       {/* Trainee Routes */}
       <Route path="/trainee" element={<TraineeHome />} />
+      <Route path="/trainee/announcements" element={<TraineeAnnouncements />} />
+      <Route path="/trainee/modules" element={<TraineeModule />} />
+      <Route path="/trainee/dashboard" element={<TraineeDashboard />} /> {/* ✅ NEW */}
+      <Route path="/trainee/upcoming-quizzes" element={<UpcomingQuizzes />} /> {/* ✅ NEW */}
+      <Route path="/trainee/quiz/:quizId" element={<TakeQuiz />} /> {/* ✅ NEW */}
     </Routes>
   );
 }
