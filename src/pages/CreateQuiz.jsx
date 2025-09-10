@@ -1,7 +1,7 @@
 // src/pages/CreateQuiz.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import './CreateQuiz.css';
 
@@ -15,7 +15,7 @@ const CreateQuiz = () => {
   const [schedule, setSchedule] = useState('');
   const [duration, setDuration] = useState('');
   const [questions, setQuestions] = useState([]);
-  const [currentQuestion, setCurrentQuestion] = useState({ type: 'MCQ', question: '', options: [], answer: '' });
+  const [currentQuestion, setCurrentQuestion] = useState({ type: 'MCQ', question: '', options: ['', ''], answer: '' });
 
   useEffect(() => {
     const fetchModules = async () => {
@@ -28,22 +28,24 @@ const CreateQuiz = () => {
 
   const addQuestion = () => {
     if (!currentQuestion.question || !currentQuestion.answer) return;
-    setQuestions([...questions, currentQuestion]);
-    setCurrentQuestion({ type: 'MCQ', question: '', options: [], answer: '' });
+    setQuestions([...questions, currentQuestion]); // append instead of replace
+    setCurrentQuestion({ type: 'MCQ', question: '', options: ['', ''], answer: '' });
   };
 
   const handleCreateQuiz = async () => {
     if (!quizTitle || !schedule || !duration || questions.length === 0 || !selectedModuleId) return;
 
     try {
-      await addDoc(collection(db, 'quizzes'), {
-        moduleId: selectedModuleId,
-        moduleName: selectedModuleName,
-        title: quizTitle,
-        schedule: new Date(schedule),
-        duration: parseInt(duration),
-        questions,
-        scores: []
+      const moduleRef = doc(db, 'modules', selectedModuleId);
+
+      await updateDoc(moduleRef, {
+        quizzes: arrayUnion({
+          title: quizTitle,
+          schedule: new Date(schedule),
+          duration: parseInt(duration),
+          questions,
+          createdAt: new Date()
+        })
       });
 
       navigate('/admin/module-manager');
@@ -60,8 +62,10 @@ const CreateQuiz = () => {
         value={selectedModuleId}
         onChange={(e) => {
           const mod = modules.find(m => m.id === e.target.value);
-          setSelectedModuleId(mod.id);
-          setSelectedModuleName(mod.name);
+          if (mod) {
+            setSelectedModuleId(mod.id);
+            setSelectedModuleName(mod.name);
+          }
         }}
       >
         <option value="">Select Module</option>
@@ -97,26 +101,39 @@ const CreateQuiz = () => {
           <option value="TrueFalse">True/False</option>
           <option value="ShortAnswer">Short Answer</option>
         </select>
+
         <input
           type="text"
           placeholder="Question"
           value={currentQuestion.question}
           onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
         />
+
         {currentQuestion.type === 'MCQ' && (
           <>
             <input
               type="text"
               placeholder="Option A"
-              onChange={(e) => setCurrentQuestion({ ...currentQuestion, options: [e.target.value, ...currentQuestion.options.slice(1)] })}
+              value={currentQuestion.options[0]}
+              onChange={(e) => {
+                const updatedOptions = [...currentQuestion.options];
+                updatedOptions[0] = e.target.value;
+                setCurrentQuestion({ ...currentQuestion, options: updatedOptions });
+              }}
             />
             <input
               type="text"
               placeholder="Option B"
-              onChange={(e) => setCurrentQuestion({ ...currentQuestion, options: [currentQuestion.options[0], e.target.value] })}
+              value={currentQuestion.options[1]}
+              onChange={(e) => {
+                const updatedOptions = [...currentQuestion.options];
+                updatedOptions[1] = e.target.value;
+                setCurrentQuestion({ ...currentQuestion, options: updatedOptions });
+              }}
             />
           </>
         )}
+
         <input
           type="text"
           placeholder="Correct Answer"
@@ -124,6 +141,23 @@ const CreateQuiz = () => {
           onChange={(e) => setCurrentQuestion({ ...currentQuestion, answer: e.target.value })}
         />
         <button className="btn" onClick={addQuestion}>Add Question</button>
+      </div>
+
+      {/* Show added questions */}
+      <div className="questions-list">
+        {questions.map((q, idx) => (
+          <div key={idx} className="question-preview">
+            <p><strong>{idx + 1}.</strong> {q.question}</p>
+            {q.type === 'MCQ' && (
+              <ul>
+                {q.options.map((opt, i) => (
+                  <li key={i}>{opt}</li>
+                ))}
+              </ul>
+            )}
+            <p><em>Answer:</em> {q.answer}</p>
+          </div>
+        ))}
       </div>
 
       <button className="btn gold" onClick={handleCreateQuiz}>Create Quiz</button>

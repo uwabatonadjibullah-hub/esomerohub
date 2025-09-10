@@ -79,6 +79,33 @@ const ModuleManager = () => {
           <div key={mod.id} className="module-card">
             <h2>{mod.name}</h2>
             <p>Enrolment Key: <strong>{mod.enrolmentKey}</strong></p>
+
+            {/* Lectures */}
+            {mod.lectures && mod.lectures.length > 0 && (
+              <div className="lectures-section">
+                <h3>📖 Lectures</h3>
+                <ul>
+                  {mod.lectures.map((lec, i) => (
+                    <li key={i}>{lec.title || `Lecture ${i + 1}`}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Quizzes */}
+            {mod.quizzes && mod.quizzes.length > 0 && (
+              <div className="quizzes-section">
+                <h3>📝 Quizzes</h3>
+                <ul>
+                  {mod.quizzes.map((quiz, i) => (
+                    <li key={i}>
+                      {quiz.title} ({quiz.questions?.length || 0} questions)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="module-actions">
               <button className="btn" onClick={() => navigate(`/admin/module/${mod.id}/add-lecture`)}>
                 Add Lecture
