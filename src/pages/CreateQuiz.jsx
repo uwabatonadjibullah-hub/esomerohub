@@ -15,7 +15,12 @@ const CreateQuiz = () => {
   const [schedule, setSchedule] = useState('');
   const [duration, setDuration] = useState('');
   const [questions, setQuestions] = useState([]);
-  const [currentQuestion, setCurrentQuestion] = useState({ type: 'MCQ', question: '', options: ['', ''], answer: '' });
+  const [currentQuestion, setCurrentQuestion] = useState({
+    type: 'MCQ',
+    question: '',
+    options: ['', ''],
+    answer: ''
+  });
 
   useEffect(() => {
     const fetchModules = async () => {
@@ -44,7 +49,9 @@ const CreateQuiz = () => {
           schedule: new Date(schedule),
           duration: parseInt(duration),
           questions,
-          createdAt: new Date()
+          createdAt: new Date(),
+          moduleId: selectedModuleId,
+          moduleName: selectedModuleName
         })
       });
 
