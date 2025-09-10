@@ -41,7 +41,6 @@ const TraineeDashboard = () => {
           }
 
           // Collect scores for ranking
-          const studentRef = doc(db, 'users', s.studentId);
           facultyScores.push({ studentId: s.studentId, module, type, score: s.score });
         });
       });
@@ -49,7 +48,6 @@ const TraineeDashboard = () => {
       setScores(traineeScores);
 
       // Calculate rank
-      const facultyStudents = facultyScores.filter(s => s.studentId !== user.uid);
       const myTotal = Object.values(traineeScores).reduce((sum, mod) => {
         return sum + Object.values(mod).reduce((a, b) => a + b, 0);
       }, 0);

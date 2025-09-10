@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import './TakeQuiz.css';
 
 const TakeQuiz = () => {
   const { quizId } = useParams();
-  const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
@@ -34,39 +33,7 @@ const TakeQuiz = () => {
     fetchQuiz();
   }, [quizId]);
 
-  useEffect(() => {
-    if (submitted || timeLeft === null) return;
-
-    if (timeLeft <= 0) {
-      handleSubmit();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, submitted]);
-
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  const handleAnswerChange = (index, value) => {
-    setAnswers({ ...answers, [index]: value });
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!quiz || submitted) return;
 
     let total = 0;
@@ -89,6 +56,38 @@ const TakeQuiz = () => {
     }];
 
     await updateDoc(quizRef, { scores: updatedScores });
+  }, [quiz, answers, submitted]);
+
+  useEffect(() => {
+    if (submitted || timeLeft === null) return;
+
+    if (timeLeft <= 0) {
+      handleSubmit();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, submitted, handleSubmit]);
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const handleAnswerChange = (index, value) => {
+    setAnswers({ ...answers, [index]: value });
   };
 
   if (!quiz) return <div className="take-quiz-container">Loading quiz...</div>;

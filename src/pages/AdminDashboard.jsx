@@ -54,7 +54,8 @@ const AdminDashboard = () => {
         const rawMarks = studentMarks[id] || {};
         const averagedMarks = {};
 
-        modules.forEach(mod => {
+        // ✅ use moduleList instead of modules
+        moduleList.forEach(mod => {
           const scores = rawMarks[mod] || [];
           averagedMarks[mod] = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
         });
@@ -74,7 +75,7 @@ const AdminDashboard = () => {
     };
 
     fetchData();
-  }, []);
+  }, []); // ✅ no more ESLint warning
 
   return (
     <div className="admin-dashboard">

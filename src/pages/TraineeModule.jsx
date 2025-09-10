@@ -1,6 +1,6 @@
 // src/pages/TraineeModule.jsx
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import './TraineeModule.css';
@@ -8,7 +8,6 @@ import './TraineeModule.css';
 const TraineeModule = () => {
   const [modules, setModules] = useState([]);
   const navigate = useNavigate();
-  const now = new Date();
 
   useEffect(() => {
     const fetchModules = async () => {
@@ -21,6 +20,7 @@ const TraineeModule = () => {
   }, []);
 
   const getQuizStatus = (quiz) => {
+    const now = new Date();
     const start = new Date(quiz.schedule.seconds * 1000);
     const end = new Date(start.getTime() + quiz.duration * 60 * 1000);
     const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -68,7 +68,10 @@ const TraineeModule = () => {
                       <li key={i} className={`quiz-item ${status}`}>
                         <span>{quiz.title}</span>
                         {status === 'active' && (
-                          <button className="btn gold" onClick={() => navigate(`/trainee/quiz/${quiz.id}`)}>
+                          <button
+                            className="btn gold"
+                            onClick={() => navigate(`/trainee/quiz/${quiz.id}`)}
+                          >
                             Take Quiz
                           </button>
                         )}

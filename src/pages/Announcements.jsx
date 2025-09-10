@@ -1,6 +1,6 @@
 // src/pages/Announcements.jsx
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import './Announcements.css';
 
