@@ -15,11 +15,12 @@ const CreateQuiz = () => {
   const [schedule, setSchedule] = useState('');
   const [expiry, setExpiry] = useState('');
   const [duration, setDuration] = useState('');
+  const [questionsPerTrainee, setQuestionsPerTrainee] = useState(''); // NEW FIELD
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState({
     type: 'MCQ',
     question: '',
-    options: ['', ''],
+    options: ['', '', ''],
     answer: ''
   });
 
@@ -34,8 +35,14 @@ const CreateQuiz = () => {
 
   const addQuestion = () => {
     if (!currentQuestion.question || !currentQuestion.answer) return;
+
+    if (currentQuestion.type === 'MCQ' && currentQuestion.options.some(opt => !opt.trim())) {
+      alert("Please provide all 3 options for the multiple choice question.");
+      return;
+    }
+
     setQuestions([...questions, currentQuestion]);
-    setCurrentQuestion({ type: 'MCQ', question: '', options: ['', ''], answer: '' });
+    setCurrentQuestion({ type: 'MCQ', question: '', options: ['', '', ''], answer: '' });
   };
 
   const handleCreateQuiz = async () => {
@@ -44,10 +51,13 @@ const CreateQuiz = () => {
       !schedule ||
       !expiry ||
       !duration ||
+      !questionsPerTrainee ||
       questions.length === 0 ||
       !selectedModuleId
-    )
+    ) {
+      alert("Please fill in all fields, add questions, and set questions per trainee.");
       return;
+    }
 
     try {
       const moduleRef = doc(db, 'modules', selectedModuleId);
@@ -55,9 +65,10 @@ const CreateQuiz = () => {
       await updateDoc(moduleRef, {
         quizzes: arrayUnion({
           title: quizTitle,
-          schedule: new Date(schedule), // start date
-          expiry: new Date(expiry),     // end date (life span)
+          schedule: new Date(schedule),
+          expiry: new Date(expiry),
           duration: parseInt(duration),
+          questionsPerTrainee: parseInt(questionsPerTrainee),
           questions,
           createdAt: new Date(),
           moduleId: selectedModuleId,
@@ -121,11 +132,24 @@ const CreateQuiz = () => {
         onChange={(e) => setDuration(e.target.value)}
       />
 
+      <input
+        type="number"
+        placeholder="Number of Questions per Trainee"
+        value={questionsPerTrainee}
+        onChange={(e) => setQuestionsPerTrainee(e.target.value)}
+      />
+
       {/* Question Builder */}
       <div className="question-builder">
         <select
           value={currentQuestion.type}
-          onChange={(e) => setCurrentQuestion({ ...currentQuestion, type: e.target.value })}
+          onChange={(e) =>
+            setCurrentQuestion({
+              ...currentQuestion,
+              type: e.target.value,
+              options: e.target.value === 'MCQ' ? ['', '', ''] : []
+            })
+          }
         >
           <option value="MCQ">Multiple Choice</option>
           <option value="TrueFalse">True/False</option>
@@ -161,6 +185,16 @@ const CreateQuiz = () => {
                 setCurrentQuestion({ ...currentQuestion, options: updatedOptions });
               }}
             />
+            <input
+              type="text"
+              placeholder="Option C"
+              value={currentQuestion.options[2]}
+              onChange={(e) => {
+                const updatedOptions = [...currentQuestion.options];
+                updatedOptions[2] = e.target.value;
+                setCurrentQuestion({ ...currentQuestion, options: updatedOptions });
+              }}
+            />
           </>
         )}
 
@@ -181,7 +215,14 @@ const CreateQuiz = () => {
             {q.type === 'MCQ' && (
               <ul>
                 {q.options.map((opt, i) => (
-                  <li key={i}>{opt}</li>
+                  <li key={i}>{String.fromCharCode(65 + i)}. {opt}</li> {/* A., B., C. */}
+                ))}
+              </ul>
+            )}
+            {q.type === 'TrueFalse' && (
+              <ul>
+                {['True', 'False'].map((opt, i) => (
+                  <li key={i}>{String.fromCharCode(65 + i)}. {opt}</li>
                 ))}
               </ul>
             )}

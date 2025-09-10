@@ -5,10 +5,18 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import './TakeQuiz.css';
 
+const shuffleArray = (arr) => {
+  return arr
+    .map((item) => ({ item, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ item }) => item);
+};
+
 const TakeQuiz = () => {
   const { quizId } = useParams();
 
   const [quiz, setQuiz] = useState(null);
+  const [shuffledQuestions, setShuffledQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(null);
@@ -21,8 +29,24 @@ const TakeQuiz = () => {
       const quizSnap = await getDoc(quizRef);
       if (quizSnap.exists()) {
         const data = quizSnap.data();
-        setQuiz({ id: quizSnap.id, ...data });
 
+        // Shuffle questions and their options
+        const randomizedQuestions = shuffleArray(
+          data.questions.map((q) => {
+            if (q.type === 'MCQ') {
+              return { ...q, options: shuffleArray(q.options) };
+            }
+            if (q.type === 'TrueFalse') {
+              return { ...q, options: shuffleArray(['True', 'False']) };
+            }
+            return q;
+          })
+        );
+
+        setQuiz({ id: quizSnap.id, ...data });
+        setShuffledQuestions(randomizedQuestions);
+
+        // Timer setup
         const now = new Date();
         const start = data.schedule?.seconds
           ? new Date(data.schedule.seconds * 1000)
@@ -31,7 +55,6 @@ const TakeQuiz = () => {
           ? new Date(data.expiry.seconds * 1000)
           : new Date(data.expiry);
 
-        // End of quiz = min(start + duration, expiry)
         const endByDuration = new Date(start.getTime() + data.duration * 60 * 1000);
         const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
 
@@ -47,13 +70,13 @@ const TakeQuiz = () => {
     if (!quiz || submitted) return;
 
     let total = 0;
-    quiz.questions.forEach((q, i) => {
+    shuffledQuestions.forEach((q, i) => {
       const correct = q.answer.trim().toLowerCase();
       const given = (answers[i] || '').trim().toLowerCase();
       if (correct === given) total += 1;
     });
 
-    const finalScore = Math.round((total / quiz.questions.length) * 100);
+    const finalScore = Math.round((total / shuffledQuestions.length) * 100);
     setScore(finalScore);
     setSubmitted(true);
     setShowPopup(true);
@@ -66,7 +89,7 @@ const TakeQuiz = () => {
     }];
 
     await updateDoc(quizRef, { scores: updatedScores });
-  }, [quiz, answers, submitted]);
+  }, [quiz, shuffledQuestions, answers, submitted]);
 
   useEffect(() => {
     if (submitted || timeLeft === null) return;
@@ -77,7 +100,7 @@ const TakeQuiz = () => {
     }
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
           handleSubmit();
@@ -121,7 +144,7 @@ const TakeQuiz = () => {
       <p className="quiz-meta">Expiry: {expiry.toLocaleString()}</p>
       {!submitted && <p className="countdown">⏳ Time Left: {formatTime(timeLeft)}</p>}
 
-      {quiz.questions.map((q, i) => (
+      {shuffledQuestions.map((q, i) => (
         <div key={i} className="question-block">
           <p className="question-text">{i + 1}. {q.question}</p>
           {q.type === 'MCQ' && (
@@ -135,14 +158,14 @@ const TakeQuiz = () => {
                     onChange={() => handleAnswerChange(i, opt)}
                     disabled={submitted}
                   />
-                  {opt}
+                  {String.fromCharCode(65 + j)}. {opt}
                 </label>
               ))}
             </div>
           )}
           {q.type === 'TrueFalse' && (
             <div className="options">
-              {['True', 'False'].map((opt, j) => (
+              {q.options.map((opt, j) => (
                 <label key={j}>
                   <input
                     type="radio"
@@ -151,7 +174,7 @@ const TakeQuiz = () => {
                     onChange={() => handleAnswerChange(i, opt)}
                     disabled={submitted}
                   />
-                  {opt}
+                  {String.fromCharCode(65 + j)}. {opt}
                 </label>
               ))}
             </div>
