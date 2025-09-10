@@ -1,3 +1,4 @@
+// src/pages/TakeQuiz.jsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -23,9 +24,18 @@ const TakeQuiz = () => {
         setQuiz({ id: quizSnap.id, ...data });
 
         const now = new Date();
-        const start = new Date(data.schedule.seconds * 1000);
-        const end = new Date(start.getTime() + data.duration * 60 * 1000);
-        const remaining = Math.floor((end - now) / 1000);
+        const start = data.schedule?.seconds
+          ? new Date(data.schedule.seconds * 1000)
+          : new Date(data.schedule);
+        const expiry = data.expiry?.seconds
+          ? new Date(data.expiry.seconds * 1000)
+          : new Date(data.expiry);
+
+        // End of quiz = min(start + duration, expiry)
+        const endByDuration = new Date(start.getTime() + data.duration * 60 * 1000);
+        const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
+
+        const remaining = Math.floor((effectiveEnd - now) / 1000);
         setTimeLeft(remaining > 0 ? remaining : 0);
       }
     };
@@ -93,17 +103,22 @@ const TakeQuiz = () => {
   if (!quiz) return <div className="take-quiz-container">Loading quiz...</div>;
 
   const now = new Date();
-  const start = new Date(quiz.schedule.seconds * 1000);
-  const end = new Date(start.getTime() + quiz.duration * 60 * 1000);
+  const start = quiz.schedule?.seconds
+    ? new Date(quiz.schedule.seconds * 1000)
+    : new Date(quiz.schedule);
+  const expiry = quiz.expiry?.seconds
+    ? new Date(quiz.expiry.seconds * 1000)
+    : new Date(quiz.expiry);
 
   if (now < start) return <div className="take-quiz-container">⛔ Quiz not yet available.</div>;
-  if (now > end && !submitted) return <div className="take-quiz-container">✔️ Quiz has expired.</div>;
+  if (now > expiry && !submitted) return <div className="take-quiz-container">✔️ Quiz has expired.</div>;
 
   return (
     <div className="take-quiz-container">
       <h1 className="quiz-title">📝 {quiz.title}</h1>
       <p className="quiz-meta">Module: {quiz.moduleName}</p>
       <p className="quiz-meta">Duration: {quiz.duration} minutes</p>
+      <p className="quiz-meta">Expiry: {expiry.toLocaleString()}</p>
       {!submitted && <p className="countdown">⏳ Time Left: {formatTime(timeLeft)}</p>}
 
       {quiz.questions.map((q, i) => (

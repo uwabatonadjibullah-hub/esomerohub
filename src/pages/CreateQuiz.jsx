@@ -13,6 +13,7 @@ const CreateQuiz = () => {
   const [selectedModuleName, setSelectedModuleName] = useState('');
   const [quizTitle, setQuizTitle] = useState('');
   const [schedule, setSchedule] = useState('');
+  const [expiry, setExpiry] = useState('');
   const [duration, setDuration] = useState('');
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState({
@@ -33,12 +34,20 @@ const CreateQuiz = () => {
 
   const addQuestion = () => {
     if (!currentQuestion.question || !currentQuestion.answer) return;
-    setQuestions([...questions, currentQuestion]); // append instead of replace
+    setQuestions([...questions, currentQuestion]);
     setCurrentQuestion({ type: 'MCQ', question: '', options: ['', ''], answer: '' });
   };
 
   const handleCreateQuiz = async () => {
-    if (!quizTitle || !schedule || !duration || questions.length === 0 || !selectedModuleId) return;
+    if (
+      !quizTitle ||
+      !schedule ||
+      !expiry ||
+      !duration ||
+      questions.length === 0 ||
+      !selectedModuleId
+    )
+      return;
 
     try {
       const moduleRef = doc(db, 'modules', selectedModuleId);
@@ -46,7 +55,8 @@ const CreateQuiz = () => {
       await updateDoc(moduleRef, {
         quizzes: arrayUnion({
           title: quizTitle,
-          schedule: new Date(schedule),
+          schedule: new Date(schedule), // start date
+          expiry: new Date(expiry),     // end date (life span)
           duration: parseInt(duration),
           questions,
           createdAt: new Date(),
@@ -65,6 +75,7 @@ const CreateQuiz = () => {
     <div className="create-quiz-container">
       <h1 className="page-title">📝 Create Quiz</h1>
 
+      {/* Select Module */}
       <select
         value={selectedModuleId}
         onChange={(e) => {
@@ -81,17 +92,28 @@ const CreateQuiz = () => {
         ))}
       </select>
 
+      {/* Quiz Details */}
       <input
         type="text"
         placeholder="Quiz Title"
         value={quizTitle}
         onChange={(e) => setQuizTitle(e.target.value)}
       />
+
+      <label>Start Time</label>
       <input
         type="datetime-local"
         value={schedule}
         onChange={(e) => setSchedule(e.target.value)}
       />
+
+      <label>End Time (Expiry)</label>
+      <input
+        type="datetime-local"
+        value={expiry}
+        onChange={(e) => setExpiry(e.target.value)}
+      />
+
       <input
         type="number"
         placeholder="Duration (minutes)"
@@ -99,6 +121,7 @@ const CreateQuiz = () => {
         onChange={(e) => setDuration(e.target.value)}
       />
 
+      {/* Question Builder */}
       <div className="question-builder">
         <select
           value={currentQuestion.type}
