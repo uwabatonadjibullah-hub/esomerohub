@@ -1,4 +1,3 @@
-// src/pages/UpcomingQuizzes.jsx
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -43,7 +42,7 @@ const UpcomingQuizzes = () => {
             <div key={quiz.id} className="quiz-card">
               <h2 className="quiz-title">{quiz.title}</h2>
               <p className="quiz-module">
-                Module: <strong>{quiz.module}</strong>
+                Module: <strong>{quiz.moduleName || 'Unknown'}</strong>
               </p>
               <p className="quiz-time">
                 Scheduled: {quiz.schedule?.seconds

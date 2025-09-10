@@ -1,31 +1,30 @@
 // src/pages/CreateQuiz.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import './CreateQuiz.css';
 
 const CreateQuiz = () => {
-  const { moduleId } = useParams();
   const navigate = useNavigate();
 
+  const [modules, setModules] = useState([]);
+  const [selectedModuleId, setSelectedModuleId] = useState('');
+  const [selectedModuleName, setSelectedModuleName] = useState('');
   const [quizTitle, setQuizTitle] = useState('');
   const [schedule, setSchedule] = useState('');
   const [duration, setDuration] = useState('');
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState({ type: 'MCQ', question: '', options: [], answer: '' });
-  const [moduleName, setModuleName] = useState('');
 
   useEffect(() => {
-    const fetchModuleName = async () => {
-      const moduleRef = doc(db, 'modules', moduleId);
-      const moduleSnap = await getDoc(moduleRef);
-      if (moduleSnap.exists()) {
-        setModuleName(moduleSnap.data().name || 'Unnamed Module');
-      }
+    const fetchModules = async () => {
+      const snapshot = await getDocs(collection(db, 'modules'));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setModules(data);
     };
-    fetchModuleName();
-  }, [moduleId]);
+    fetchModules();
+  }, []);
 
   const addQuestion = () => {
     if (!currentQuestion.question || !currentQuestion.answer) return;
@@ -34,17 +33,17 @@ const CreateQuiz = () => {
   };
 
   const handleCreateQuiz = async () => {
-    if (!quizTitle || !schedule || !duration || questions.length === 0) return;
+    if (!quizTitle || !schedule || !duration || questions.length === 0 || !selectedModuleId) return;
 
     try {
       await addDoc(collection(db, 'quizzes'), {
-        moduleId,
-        moduleName,
+        moduleId: selectedModuleId,
+        moduleName: selectedModuleName,
         title: quizTitle,
         schedule: new Date(schedule),
         duration: parseInt(duration),
         questions,
-        scores: [] // trainee scores will be added here later
+        scores: []
       });
 
       navigate('/admin/module-manager');
@@ -56,6 +55,21 @@ const CreateQuiz = () => {
   return (
     <div className="create-quiz-container">
       <h1 className="page-title">📝 Create Quiz</h1>
+
+      <select
+        value={selectedModuleId}
+        onChange={(e) => {
+          const mod = modules.find(m => m.id === e.target.value);
+          setSelectedModuleId(mod.id);
+          setSelectedModuleName(mod.name);
+        }}
+      >
+        <option value="">Select Module</option>
+        {modules.map((mod) => (
+          <option key={mod.id} value={mod.id}>{mod.name}</option>
+        ))}
+      </select>
+
       <input
         type="text"
         placeholder="Quiz Title"
