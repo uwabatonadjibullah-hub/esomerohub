@@ -15,7 +15,7 @@ const CreateQuiz = () => {
   const [schedule, setSchedule] = useState('');
   const [expiry, setExpiry] = useState('');
   const [duration, setDuration] = useState('');
-  const [questionsPerTrainee, setQuestionsPerTrainee] = useState(''); // NEW FIELD
+  const [questionsPerTrainee, setQuestionsPerTrainee] = useState('');
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState({
     type: 'MCQ',
@@ -215,7 +215,7 @@ const CreateQuiz = () => {
             {q.type === 'MCQ' && (
               <ul>
                 {q.options.map((opt, i) => (
-                  <li key={i}>{String.fromCharCode(65 + i)}. {opt}</li> {/* A., B., C. */}
+                  <li key={i}>{String.fromCharCode(65 + i)}. {opt}</li>
                 ))}
               </ul>
             )}
