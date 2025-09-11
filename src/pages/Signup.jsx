@@ -19,6 +19,7 @@ const Signup = () => {
     lastName: '',
     username: '',
     password: '',
+    confirmPassword: '',
     gender: '',
     faculty: '',
     role: '',
@@ -27,6 +28,7 @@ const Signup = () => {
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,9 +36,9 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { firstName, lastName, username, password, gender, faculty, role, program } = formData;
+    const { firstName, lastName, username, password, confirmPassword, gender, faculty, role, program } = formData;
 
-    if (!firstName || !lastName || !username || !password || !gender || !faculty || !role || !program) {
+    if (!firstName || !lastName || !username || !password || !confirmPassword || !gender || !faculty || !role || !program) {
       setError('Please fill in all fields.');
       return;
     }
@@ -46,25 +48,29 @@ const Signup = () => {
       return;
     }
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     const email = `${username}@gmail.com`;
 
     try {
-      // 🔎 Check Firestore first
+      // Check Firestore if email already exists
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('email', '==', email));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // Email already exists → block signup
         setError('This email is already registered. Please use a different username.');
         return;
       }
 
-      // ✅ Email not in Firestore → proceed with Auth signup
+      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
 
-      // Create Firestore user doc
+      // Save user in Firestore
       await setDoc(doc(db, 'users', uid), {
         firstName,
         lastName,
@@ -76,12 +82,10 @@ const Signup = () => {
         createdAt: new Date()
       });
 
-      // Send verification email
       await sendEmailVerification(userCredential.user);
 
       setSuccess('Signup successful! Please check your inbox to verify your email.');
       setError('');
-
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
       setError(err.message);
@@ -102,7 +106,27 @@ const Signup = () => {
               Your email will be: <strong>{formData.username}@gmail.com</strong>
             </p>
           )}
-          <input type="password" name="password" placeholder="Password" onChange={handleChange} />
+          <div className="password-field">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="Password"
+              onChange={handleChange}
+            />
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="show-hide-btn"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
           <select name="gender" onChange={handleChange}>
             <option value="">Select Gender</option>
             <option value="Male">Male</option>
