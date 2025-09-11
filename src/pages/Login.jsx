@@ -17,8 +17,9 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [unverifiedUser, setUnverifiedUser] = useState(null); // store unverified user
-  const [cooldown, setCooldown] = useState(false); // prevent spam
+  const [unverifiedUser, setUnverifiedUser] = useState(null);
+  const [cooldown, setCooldown] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // toggle password visibility
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -44,7 +45,7 @@ const Login = () => {
 
       if (!user.emailVerified) {
         setError('Please verify your email before logging in.');
-        setUnverifiedUser(user); // store user so we can resend
+        setUnverifiedUser(user);
         return;
       }
 
@@ -78,13 +79,12 @@ const Login = () => {
   const handleResendVerification = async () => {
     if (unverifiedUser && !cooldown) {
       try {
-        await reload(unverifiedUser); // refresh user state
+        await reload(unverifiedUser);
         await sendEmailVerification(unverifiedUser);
 
         setSuccess('A new verification email has been sent. Please check your inbox.');
         setError('');
 
-        // enable cooldown (30s)
         setCooldown(true);
         setTimeout(() => setCooldown(false), 30000);
       } catch (err) {
@@ -104,23 +104,32 @@ const Login = () => {
             placeholder="Email"
             onChange={handleChange}
           />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            onChange={handleChange}
-          />
+          <div className="password-field">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="Password"
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="show-hide-btn"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
+
           {error && <p className="error">{error}</p>}
           {success && <p className="success">{success}</p>}
           <button type="submit" className="btn gold">Login</button>
         </form>
 
-        {/* Resend Verification Button */}
         {unverifiedUser && (
           <button
             onClick={handleResendVerification}
             className="btn resend-btn"
-            disabled={cooldown} // disable during cooldown
+            disabled={cooldown}
           >
             {cooldown ? 'Please wait...' : 'Resend Verification Email'}
           </button>
