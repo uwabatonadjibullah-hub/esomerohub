@@ -29,6 +29,7 @@ const Signup = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,7 +57,6 @@ const Signup = () => {
     const email = `${username}@gmail.com`;
 
     try {
-      // Check Firestore if email already exists
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('email', '==', email));
       const querySnapshot = await getDocs(q);
@@ -66,11 +66,9 @@ const Signup = () => {
         return;
       }
 
-      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
 
-      // Save user in Firestore
       await setDoc(doc(db, 'users', uid), {
         firstName,
         lastName,
@@ -106,17 +104,13 @@ const Signup = () => {
               Your email will be: <strong>{formData.username}@gmail.com</strong>
             </p>
           )}
+
+          {/* Password Field */}
           <div className="password-field">
             <input
               type={showPassword ? 'text' : 'password'}
               name="password"
               placeholder="Password"
-              onChange={handleChange}
-            />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="confirmPassword"
-              placeholder="Confirm Password"
               onChange={handleChange}
             />
             <button
@@ -127,6 +121,24 @@ const Signup = () => {
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
+
+          {/* Confirm Password Field */}
+          <div className="password-field">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="show-hide-btn"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
+
           <select name="gender" onChange={handleChange}>
             <option value="">Select Gender</option>
             <option value="Male">Male</option>
