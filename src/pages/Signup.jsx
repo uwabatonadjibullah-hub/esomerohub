@@ -49,20 +49,22 @@ const Signup = () => {
     const email = `${username}@gmail.com`;
 
     try {
-      // 🔎 Check Firestore if email already exists
+      // 🔎 Check Firestore first
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('email', '==', email));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        setError('This email is already registered in our system.');
+        // Email already exists → block signup
+        setError('This email is already registered. Please use a different username.');
         return;
       }
 
-      // ✅ Proceed with Firebase Auth signup
+      // ✅ Email not in Firestore → proceed with Auth signup
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
 
+      // Create Firestore user doc
       await setDoc(doc(db, 'users', uid), {
         firstName,
         lastName,
@@ -74,17 +76,15 @@ const Signup = () => {
         createdAt: new Date()
       });
 
+      // Send verification email
       await sendEmailVerification(userCredential.user);
+
       setSuccess('Signup successful! Please check your inbox to verify your email.');
       setError('');
 
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        setError('This email is already registered. Try logging in instead.');
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
       setSuccess('');
     }
   };
