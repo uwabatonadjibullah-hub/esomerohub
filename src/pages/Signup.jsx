@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import './Signup.css';
 
 const quotes = [
@@ -49,6 +49,17 @@ const Signup = () => {
     const email = `${username}@gmail.com`;
 
     try {
+      // 🔎 Check Firestore if email already exists
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        setError('This email is already registered in our system.');
+        return;
+      }
+
+      // ✅ Proceed with Firebase Auth signup
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
 
@@ -69,7 +80,11 @@ const Signup = () => {
 
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      setError(err.message);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('This email is already registered. Try logging in instead.');
+      } else {
+        setError(err.message);
+      }
       setSuccess('');
     }
   };
