@@ -44,3 +44,31 @@
   font-weight: bold;
   color: #d4af37;
 }
+
+/* 🔹 Admin Navigation Bar */
+.admin-nav {
+  position: sticky;
+  top: 0;
+  background: #000000;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  border-bottom: 2px solid #ddd;
+  z-index: 1000;
+}
+
+.admin-nav .btn {
+  background: #000000;
+  border: 1px solid #ddd;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.admin-nav .btn:hover {
+  background: gold;
+  color: #000;
+}

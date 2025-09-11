@@ -1,5 +1,7 @@
+// src/pages/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import './AdminDashboard.css';
 
@@ -19,6 +21,7 @@ const calculateStats = (students, module) => {
 const AdminDashboard = () => {
   const [studentData, setStudentData] = useState({});
   const [modules, setModules] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,7 +57,6 @@ const AdminDashboard = () => {
         const rawMarks = studentMarks[id] || {};
         const averagedMarks = {};
 
-        // ✅ use moduleList instead of modules
         moduleList.forEach(mod => {
           const scores = rawMarks[mod] || [];
           averagedMarks[mod] = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
@@ -75,10 +77,61 @@ const AdminDashboard = () => {
     };
 
     fetchData();
-  }, []); // ✅ no more ESLint warning
+  }, []);
+
+  // 🔹 CSV Export Function
+  const handleExportCSV = () => {
+    const headers = ["Faculty", "Program", "Student", "Gender", ...modules];
+    const rows = [headers];
+
+    Object.entries(studentData).forEach(([faculty, programs]) => {
+      Object.entries(programs).forEach(([program, students]) => {
+        students.forEach((s) => {
+          const row = [
+            faculty,
+            program,
+            s.name,
+            s.gender,
+            ...modules.map((mod) =>
+              s.marks?.[mod] !== null && s.marks?.[mod] !== undefined
+                ? s.marks[mod].toFixed(1)
+                : "-"
+            ),
+          ];
+          rows.push(row);
+        });
+      });
+    });
+
+    const csvContent = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "student_performance.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="admin-dashboard">
+      {/* 🔹 Admin Navigation Bar */}
+      <div className="admin-nav">
+        <button className="btn" onClick={() => navigate('/admin')}>
+          🏡 Home
+        </button>
+        <button className="btn" onClick={() => navigate('/admin/module-manager')}>
+          📚 Module Manager
+        </button>
+        <button className="btn" onClick={() => navigate('/admin/announcements')}>
+          📣 Announcements
+        </button>
+        <button className="btn gold" onClick={handleExportCSV}>
+          📥 Export CSV
+        </button>
+      </div>
+
       {Object.entries(studentData).map(([faculty, programs]) => (
         <div key={faculty} className="faculty-section">
           <h2 className="faculty-title">{faculty}</h2>

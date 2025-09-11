@@ -2,10 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 import './UpcomingQuizzes.css';
 
 const UpcomingQuizzes = () => {
   const [quizzes, setQuizzes] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchQuizzes = async () => {
@@ -60,6 +62,22 @@ const UpcomingQuizzes = () => {
 
   return (
     <div className="upcoming-quizzes-container">
+      {/* Sticky Navigation Bar */}
+      <div className="trainee-nav">
+        <button className="btn" onClick={() => navigate('/trainee')}>
+          🏡 Home
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/dashboard')}>
+          📊 Dashboard
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/modules')}>
+          📚 Modules
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/announcements')}>
+          📣 Announcements
+        </button>
+      </div>
+
       <h1 className="page-title">🗓️ Upcoming Quizzes</h1>
       {quizzes.length === 0 ? (
         <p className="empty-message">No quizzes scheduled within the next 7 days.</p>

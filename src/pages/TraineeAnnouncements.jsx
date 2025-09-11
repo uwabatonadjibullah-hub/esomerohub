@@ -2,10 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 import './TraineeAnnouncements.css';
 
 const TraineeAnnouncements = () => {
   const [announcements, setAnnouncements] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -23,6 +25,22 @@ const TraineeAnnouncements = () => {
 
   return (
     <div className="trainee-announcements-container">
+      {/* Sticky Navigation Bar */}
+      <div className="trainee-nav">
+        <button className="btn" onClick={() => navigate('/trainee')}>
+          🏡 Home
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/dashboard')}>
+          📊 Dashboard
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/modules')}>
+          📚 Modules
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/upcoming-quizzes')}>
+          📝 Upcoming Quizzes
+        </button>
+      </div>
+
       <h1 className="trainee-title">📣 Announcements</h1>
       {announcements.length === 0 ? (
         <p className="empty-message">No announcements available at the moment.</p>

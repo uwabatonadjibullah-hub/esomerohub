@@ -1,6 +1,7 @@
 // src/pages/Announcements.jsx
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import './Announcements.css';
 
@@ -9,6 +10,7 @@ const Announcements = () => {
   const [newAnnouncement, setNewAnnouncement] = useState('');
   const [lifespanDays, setLifespanDays] = useState(1);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const fetchAnnouncements = async () => {
     const now = new Date();
@@ -44,6 +46,19 @@ const Announcements = () => {
 
   return (
     <div className="announcements-container">
+      {/* 🔹 Admin Navigation Bar */}
+      <div className="admin-nav">
+        <button className="btn" onClick={() => navigate('/admin')}>
+          🏡 Home
+        </button>
+        <button className="btn" onClick={() => navigate('/admin/dashboard')}>
+          📊 Dashboard
+        </button>
+        <button className="btn" onClick={() => navigate('/admin/module-manager')}>
+          📚 Module Manager
+        </button>
+      </div>
+
       <h1 className="page-title">📢 Admin Announcements</h1>
 
       <div className="announcement-form">

@@ -52,6 +52,19 @@ const ModuleManager = () => {
 
   return (
     <div className="module-manager-container">
+      {/* 🔹 Admin Navigation Bar */}
+      <div className="admin-nav">
+        <button className="btn" onClick={() => navigate('/admin')}>
+          🏡 Home
+        </button>
+        <button className="btn" onClick={() => navigate('/admin/announcements')}>
+          📣 Announcements
+        </button>
+        <button className="btn" onClick={() => navigate('/admin/dashboard')}>
+          📊 Dashboard
+        </button>
+      </div>
+
       <h1 className="page-title">📚 Module Manager</h1>
 
       <button className="btn gold" onClick={() => setShowForm(true)}>+ Add Module</button>

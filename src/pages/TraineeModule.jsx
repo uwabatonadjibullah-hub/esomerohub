@@ -33,6 +33,19 @@ const TraineeModule = () => {
 
   return (
     <div className="trainee-module-container">
+      {/* Sticky Navigation Bar */}
+      <div className="trainee-nav">
+        <button className="btn" onClick={() => navigate('/trainee')}>
+          🏡 Home
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/dashboard')}>
+          🏠 Dashboard
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/announcements')}>
+          📢 Announcements
+        </button>
+      </div>
+
       <h1 className="page-title">📚 Your Modules</h1>
       {modules.length === 0 ? (
         <p className="empty-message">No modules available yet.</p>

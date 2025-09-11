@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 import './TraineeDashboard.css';
 
 const TraineeDashboard = () => {
@@ -9,6 +10,7 @@ const TraineeDashboard = () => {
   const [modules, setModules] = useState([]);
   const [scores, setScores] = useState({});
   const [rank, setRank] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,8 +41,6 @@ const TraineeDashboard = () => {
             if (!traineeScores[module]) traineeScores[module] = {};
             traineeScores[module][type] = s.score;
           }
-
-          // Collect scores for ranking
           facultyScores.push({ studentId: s.studentId, module, type, score: s.score });
         });
       });
@@ -78,8 +78,49 @@ const TraineeDashboard = () => {
     return modules.length ? (sum / modules.length).toFixed(1) : '0.0';
   };
 
+  // ✅ Export CSV function
+  const handleExportCSV = () => {
+    const headers = ['Module', 'Quiz', 'CAT', 'Total'];
+    const rows = modules.map(m => [
+      m.name,
+      scores[m.name]?.Quiz ?? '-',
+      scores[m.name]?.CAT ?? '-',
+      getModuleTotal(m.name)
+    ]);
+
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    csvContent += headers.join(',') + '\r\n';
+    rows.forEach(row => {
+      csvContent += row.join(',') + '\r\n';
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'trainee_scores.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="dashboard-container">
+      {/* Sticky Navigation Bar */}
+      <div className="trainee-nav">
+        <button className="btn" onClick={() => navigate('/trainee')}>
+          🏡 Home
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/modules')}>
+          📚 Modules
+        </button>
+        <button className="btn" onClick={() => navigate('/trainee/announcements')}>
+          📢 Announcements
+        </button>
+        <button className="btn gold" onClick={handleExportCSV}>
+          📥 Export CSV
+        </button>
+      </div>
+
       <h1 className="dashboard-title">🎓 Trainee Dashboard</h1>
       <div className="trainee-info">
         <p><strong>Name:</strong> {userInfo.firstName} {userInfo.lastName}</p>
