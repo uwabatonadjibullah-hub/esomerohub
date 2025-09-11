@@ -72,3 +72,23 @@
   cursor: pointer;
   font-weight: bold;
 }
+
+/* Resend verification button */
+.resend-btn {
+  margin-top: 10px;
+  padding: 10px 20px;
+  border: 2px solid #d4af37; /* gold outline */
+  background: transparent;
+  color: #d4af37;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.resend-btn:hover {
+  background: #d4af37;
+  color: #fff;
+  transform: scale(1.05);
+}
