@@ -1,7 +1,7 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification, reload } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import './Login.css';
@@ -18,6 +18,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [unverifiedUser, setUnverifiedUser] = useState(null); // store unverified user
+  const [cooldown, setCooldown] = useState(false); // prevent spam
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -75,11 +76,17 @@ const Login = () => {
   };
 
   const handleResendVerification = async () => {
-    if (unverifiedUser) {
+    if (unverifiedUser && !cooldown) {
       try {
+        await reload(unverifiedUser); // refresh user state
         await sendEmailVerification(unverifiedUser);
-        setSuccess('Verification email resent. Please check your inbox.');
+
+        setSuccess('A new verification email has been sent. Please check your inbox.');
         setError('');
+
+        // enable cooldown (30s)
+        setCooldown(true);
+        setTimeout(() => setCooldown(false), 30000);
       } catch (err) {
         setError('Failed to resend verification email. Try again later.');
       }
@@ -113,8 +120,9 @@ const Login = () => {
           <button
             onClick={handleResendVerification}
             className="btn resend-btn"
+            disabled={cooldown} // disable during cooldown
           >
-            Resend Verification Email
+            {cooldown ? 'Please wait...' : 'Resend Verification Email'}
           </button>
         )}
 
