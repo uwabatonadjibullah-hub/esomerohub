@@ -1,7 +1,7 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import './Login.css';
@@ -14,13 +14,10 @@ const quotes = [
 
 const Login = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [unverifiedUser, setUnverifiedUser] = useState(null); // store unverified user
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,6 +43,7 @@ const Login = () => {
 
       if (!user.emailVerified) {
         setError('Please verify your email before logging in.');
+        setUnverifiedUser(user); // store user so we can resend
         return;
       }
 
@@ -58,6 +56,7 @@ const Login = () => {
       const role = userDoc.data().role;
       setSuccess('Login successful! Redirecting...');
       setError('');
+      setUnverifiedUser(null);
 
       setTimeout(() => {
         if (role === 'Admin') {
@@ -71,6 +70,19 @@ const Login = () => {
     } catch (err) {
       setError(err.message);
       setSuccess('');
+      setUnverifiedUser(null);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (unverifiedUser) {
+      try {
+        await sendEmailVerification(unverifiedUser);
+        setSuccess('Verification email resent. Please check your inbox.');
+        setError('');
+      } catch (err) {
+        setError('Failed to resend verification email. Try again later.');
+      }
     }
   };
 
@@ -95,6 +107,17 @@ const Login = () => {
           {success && <p className="success">{success}</p>}
           <button type="submit" className="btn gold">Login</button>
         </form>
+
+        {/* Resend Verification Button */}
+        {unverifiedUser && (
+          <button
+            onClick={handleResendVerification}
+            className="btn resend-btn"
+          >
+            Resend Verification Email
+          </button>
+        )}
+
         <p className="signup-link">
           Don't have an account? <span onClick={() => navigate('/signup')}>Sign Up</span>
         </p>
