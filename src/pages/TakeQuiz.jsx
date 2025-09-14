@@ -1,7 +1,15 @@
 // src/pages/TakeQuiz.jsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  doc,
+  getDoc,
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs
+} from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import './TakeQuiz.css';
 
@@ -14,6 +22,7 @@ const shuffleArray = (arr) => {
 
 const TakeQuiz = () => {
   const { quizId } = useParams();
+  const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState(null);
   const [shuffledQuestions, setShuffledQuestions] = useState([]);
@@ -30,7 +39,6 @@ const TakeQuiz = () => {
       if (quizSnap.exists()) {
         const data = quizSnap.data();
 
-        // Shuffle questions and their options
         const randomizedQuestions = shuffleArray(
           data.questions.map((q) => {
             if (q.type === 'MCQ') {
@@ -46,7 +54,6 @@ const TakeQuiz = () => {
         setQuiz({ id: quizSnap.id, ...data });
         setShuffledQuestions(randomizedQuestions);
 
-        // Timer setup
         const now = new Date();
         const start = data.schedule?.seconds
           ? new Date(data.schedule.seconds * 1000)
@@ -69,6 +76,19 @@ const TakeQuiz = () => {
   const handleSubmit = useCallback(async () => {
     if (!quiz || submitted) return;
 
+    // Check for duplicate submission
+    const resultQuery = query(
+      collection(db, 'quizResults'),
+      where('quizId', '==', quiz.id),
+      where('traineeId', '==', auth.currentUser.uid)
+    );
+    const resultSnap = await getDocs(resultQuery);
+    if (!resultSnap.empty) {
+      setSubmitted(true);
+      setShowPopup(true);
+      return;
+    }
+
     let total = 0;
     shuffledQuestions.forEach((q, i) => {
       const correct = q.answer.trim().toLowerCase();
@@ -81,14 +101,15 @@ const TakeQuiz = () => {
     setSubmitted(true);
     setShowPopup(true);
 
-    const quizRef = doc(db, 'quizzes', quiz.id);
-    const updatedScores = [...(quiz.scores || []), {
-      studentId: auth.currentUser.uid,
+    await addDoc(collection(db, 'quizResults'), {
+      quizId: quiz.id,
+      traineeId: auth.currentUser.uid,
       score: finalScore,
-      timestamp: new Date()
-    }];
-
-    await updateDoc(quizRef, { scores: updatedScores });
+      timestamp: new Date(),
+      quizTitle: quiz.title,
+      moduleName: quiz.moduleName,
+      duration: quiz.duration
+    });
   }, [quiz, shuffledQuestions, answers, submitted]);
 
   useEffect(() => {
