@@ -110,7 +110,10 @@ const TakeQuiz = () => {
       moduleName: quiz.moduleName,
       duration: quiz.duration
     });
-  }, [quiz, shuffledQuestions, answers, submitted]);
+
+    // Redirect to trainee modules page after submission
+    navigate('/trainee/modules');
+  }, [quiz, shuffledQuestions, answers, submitted, navigate]);
 
   useEffect(() => {
     if (submitted || timeLeft === null) return;
