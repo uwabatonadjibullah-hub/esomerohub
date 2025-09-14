@@ -26,23 +26,20 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       const userSnap = await getDocs(collection(db, 'users'));
-      const quizSnap = await getDocs(collection(db, 'quizzes'));
+      const resultSnap = await getDocs(collection(db, 'quizResults'));
       const moduleSnap = await getDocs(collection(db, 'modules'));
 
       const users = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const quizzes = quizSnap.docs.map(doc => doc.data());
+      const results = resultSnap.docs.map(doc => doc.data());
       const moduleList = moduleSnap.docs.map(doc => doc.data().name);
       setModules(moduleList);
 
       const studentMarks = {};
-      quizzes.forEach(quiz => {
-        const { module, scores } = quiz;
-        scores.forEach(score => {
-          const id = score.studentId;
-          if (!studentMarks[id]) studentMarks[id] = {};
-          if (!studentMarks[id][module]) studentMarks[id][module] = [];
-          studentMarks[id][module].push(score.score);
-        });
+      results.forEach(result => {
+        const { traineeId, moduleName, score } = result;
+        if (!studentMarks[traineeId]) studentMarks[traineeId] = {};
+        if (!studentMarks[traineeId][moduleName]) studentMarks[traineeId][moduleName] = [];
+        studentMarks[traineeId][moduleName].push(score);
       });
 
       const structured = {
@@ -79,7 +76,6 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
-  // 🔹 CSV Export Function
   const handleExportCSV = () => {
     const headers = ["Faculty", "Program", "Student", "Gender", ...modules];
     const rows = [headers];
@@ -116,20 +112,11 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
-      {/* 🔹 Admin Navigation Bar */}
       <div className="admin-nav">
-        <button className="btn" onClick={() => navigate('/admin')}>
-          🏡 Home
-        </button>
-        <button className="btn" onClick={() => navigate('/admin/module-manager')}>
-          📚 Module Manager
-        </button>
-        <button className="btn" onClick={() => navigate('/admin/announcements')}>
-          📣 Announcements
-        </button>
-        <button className="btn gold" onClick={handleExportCSV}>
-          📥 Export CSV
-        </button>
+        <button className="btn" onClick={() => navigate('/admin')}>🏡 Home</button>
+        <button className="btn" onClick={() => navigate('/admin/module-manager')}>📚 Module Manager</button>
+        <button className="btn" onClick={() => navigate('/admin/announcements')}>📣 Announcements</button>
+        <button className="btn gold" onClick={handleExportCSV}>📥 Export CSV</button>
       </div>
 
       {Object.entries(studentData).map(([faculty, programs]) => (
