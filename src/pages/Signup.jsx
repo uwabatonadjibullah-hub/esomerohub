@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import './Signup.css';
 
 const quotes = [
@@ -19,7 +19,6 @@ const Signup = () => {
     lastName: '',
     username: '',
     password: '',
-    confirmPassword: '',
     gender: '',
     faculty: '',
     role: '',
@@ -28,8 +27,6 @@ const Signup = () => {
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,9 +34,9 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { firstName, lastName, username, password, confirmPassword, gender, faculty, role, program } = formData;
+    const { firstName, lastName, username, password, gender, faculty, role, program } = formData;
 
-    if (!firstName || !lastName || !username || !password || !confirmPassword || !gender || !faculty || !role || !program) {
+    if (!firstName || !lastName || !username || !password || !gender || !faculty || !role || !program) {
       setError('Please fill in all fields.');
       return;
     }
@@ -49,23 +46,9 @@ const Signup = () => {
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
     const email = `${username}@gmail.com`;
 
     try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', email));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        setError('This email is already registered. Please use a different username.');
-        return;
-      }
-
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
 
@@ -81,9 +64,9 @@ const Signup = () => {
       });
 
       await sendEmailVerification(userCredential.user);
-
       setSuccess('Signup successful! Please check your inbox to verify your email.');
       setError('');
+
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
       setError(err.message);
@@ -104,41 +87,7 @@ const Signup = () => {
               Your email will be: <strong>{formData.username}@gmail.com</strong>
             </p>
           )}
-
-          {/* Password Field */}
-          <div className="password-field">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              placeholder="Password"
-              onChange={handleChange}
-            />
-            <button
-              type="button"
-              className="show-hide-btn"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
-          </div>
-
-          {/* Confirm Password Field */}
-          <div className="password-field">
-            <input
-              type={showConfirmPassword ? 'text' : 'password'}
-              name="confirmPassword"
-              placeholder="Confirm Password"
-              onChange={handleChange}
-            />
-            <button
-              type="button"
-              className="show-hide-btn"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? 'Hide' : 'Show'}
-            </button>
-          </div>
-
+          <input type="password" name="password" placeholder="Password" onChange={handleChange} />
           <select name="gender" onChange={handleChange}>
             <option value="">Select Gender</option>
             <option value="Male">Male</option>
