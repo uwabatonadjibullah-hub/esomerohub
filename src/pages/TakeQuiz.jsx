@@ -123,16 +123,22 @@ const TakeQuiz = () => {
       setSubmitted(true);
       setShowPopup(true);
 
-      // Save result
-      await addDoc(collection(db, "quizResults"), {
+      // ✅ Save result safely
+      const quizResultData = {
         moduleId,
         quizTitle: quiz.title,
         traineeId: auth.currentUser.uid,
         score: finalScore,
         timestamp: new Date(),
-        moduleName: quiz.moduleName,
         duration: quiz.duration,
-      });
+      };
+
+      // Add moduleName only if it exists
+      if (quiz.moduleName) {
+        quizResultData.moduleName = quiz.moduleName;
+      }
+
+      await addDoc(collection(db, "quizResults"), quizResultData);
     } catch (error) {
       console.error("Error submitting quiz:", error);
     }
@@ -197,7 +203,7 @@ const TakeQuiz = () => {
   return (
     <div className="take-quiz-container">
       <h1 className="quiz-title">📝 {quiz.title}</h1>
-      <p className="quiz-meta">Module: {quiz.moduleName}</p>
+      <p className="quiz-meta">Module: {quiz.moduleName || moduleId}</p>
       <p className="quiz-meta">Duration: {quiz.duration} minutes</p>
       <p className="quiz-meta">Expiry: {expiry.toLocaleString()}</p>
       {!submitted && (
