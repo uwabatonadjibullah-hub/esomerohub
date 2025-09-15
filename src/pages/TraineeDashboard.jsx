@@ -11,6 +11,7 @@ const TraineeDashboard = () => {
   const [modulesMap, setModulesMap] = useState({});
   const [quizTitles, setQuizTitles] = useState([]);
   const [programRank, setProgramRank] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,58 +19,72 @@ const TraineeDashboard = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      // ✅ Load trainee info
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) return;
-      const traineeData = userSnap.data();
-      setUserInfo(traineeData);
+      try {
+        setLoading(true);
+        
+        // ✅ Load trainee info
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) return;
+        const traineeData = userSnap.data();
+        setUserInfo(traineeData);
 
-      // ✅ Load all modules into a map { moduleId: moduleName }
-      const moduleSnap = await getDocs(collection(db, "modules"));
-      const moduleMap = {};
-      moduleSnap.forEach((docSnap) => {
-        // Changed from moduleName to name based on the screenshot
-        moduleMap[docSnap.id] = docSnap.data().name || "Unnamed Module";
-      });
-      setModulesMap(moduleMap);
+        // ✅ Load all modules into a map { moduleId: moduleName }
+        const moduleSnap = await getDocs(collection(db, "modules"));
+        const moduleMap = {};
+        moduleSnap.forEach((docSnap) => {
+          moduleMap[docSnap.id] = docSnap.data().name || "Unnamed Module";
+        });
+        setModulesMap(moduleMap);
 
-      // ✅ Load this trainee's quiz results
-      const q = query(collection(db, "quizResults"), where("traineeId", "==", user.uid));
-      const quizSnap = await getDocs(q);
-      const traineeResults = quizSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setResults(traineeResults);
+        // ✅ Load this trainee's quiz results
+        const q = query(collection(db, "quizResults"), where("traineeId", "==", user.uid));
+        const quizSnap = await getDocs(q);
+        const traineeResults = quizSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setResults(traineeResults);
 
-      // ✅ Collect all quiz titles dynamically
-      const titles = [...new Set(traineeResults.map((r) => r.quizTitle))];
-      setQuizTitles(titles);
+        // ✅ Collect all quiz titles dynamically
+        const titles = [...new Set(traineeResults.map((r) => r.quizTitle))];
+        setQuizTitles(titles);
 
-      // ✅ Compute rank across program (only users with same program)
-      const allResultsSnap = await getDocs(collection(db, "quizResults"));
-      const totals = {};
-      allResultsSnap.forEach((docSnap) => {
-        const data = docSnap.data();
-        totals[data.traineeId] = (totals[data.traineeId] || 0) + (data.score || 0);
-      });
+        // ✅ Compute rank across program (only users with same program)
+        const allResultsSnap = await getDocs(collection(db, "quizResults"));
+        const totals = {};
+        allResultsSnap.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data.traineeId) {
+            totals[data.traineeId] = (totals[data.traineeId] || 0) + (data.score || 0);
+          }
+        });
 
-      // Filter totals by trainees in the same program
-      const usersSnap = await getDocs(collection(db, "users"));
-      const programUsers = {};
-      usersSnap.forEach((docSnap) => {
-        const u = docSnap.data();
-        if (u.program === traineeData.program) {
-          programUsers[docSnap.id] = true;
-        }
-      });
+        // Get all users in the same program with their totals
+        const usersSnap = await getDocs(collection(db, "users"));
+        const programUsersWithTotals = [];
 
-      const filteredTotals = Object.keys(totals)
-        .filter((tid) => programUsers[tid])
-        .map((tid) => totals[tid]);
+        usersSnap.forEach((docSnap) => {
+          const u = docSnap.data();
+          if (u.program === traineeData.program && totals[docSnap.id] !== undefined) {
+            programUsersWithTotals.push({
+              userId: docSnap.id,
+              total: totals[docSnap.id] || 0
+            });
+          }
+        });
 
-      const myTotal = totals[user.uid] || 0;
-      const sortedTotals = filteredTotals.sort((a, b) => b - a);
-      const myRank = sortedTotals.findIndex((t) => t === myTotal) + 1;
-      setProgramRank(myRank);
+        // Sort by total score descending
+        programUsersWithTotals.sort((a, b) => b.total - a.total);
+
+        // Find current user's rank (fix: use userId comparison)
+        const userIndex = programUsersWithTotals.findIndex(user => user.userId === user.uid);
+        const myRank = userIndex !== -1 ? userIndex + 1 : null;
+        setProgramRank(myRank);
+
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setProgramRank(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
@@ -106,7 +121,7 @@ const TraineeDashboard = () => {
         moduleName,
         ...quizTitles.map((title) => getScore(moduleId, title)),
         getModuleTotal(moduleId),
-        "-", // rank per module is shown on UI but optional in CSV
+        "-",
       ];
       csv += row.join(",") + "\n";
     });
@@ -192,7 +207,7 @@ const TraineeDashboard = () => {
           <tr className="rank-row">
             <td colSpan={quizTitles.length + 3}>
               <strong>Rank in Program:</strong>{" "}
-              {programRank ? `#${programRank}` : "Calculating..."}
+              {loading ? "Calculating..." : (programRank ? `#${programRank}` : "No rank available")}
             </td>
           </tr>
         </tbody>
@@ -204,28 +219,47 @@ const TraineeDashboard = () => {
 // Small helper component for async module rank
 const ModuleRank = ({ moduleId }) => {
   const [rank, setRank] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRank = async () => {
-      const allResultsSnap = await getDocs(collection(db, "quizResults"));
-      const totals = {};
-      allResultsSnap.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data.moduleId === moduleId) {
-          totals[data.traineeId] = (totals[data.traineeId] || 0) + (data.score || 0);
-        }
-      });
+      try {
+        const allResultsSnap = await getDocs(collection(db, "quizResults"));
+        const totals = {};
+        allResultsSnap.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data.moduleId === moduleId) {
+            totals[data.traineeId] = (totals[data.traineeId] || 0) + (data.score || 0);
+          }
+        });
 
-      const user = auth.currentUser;
-      const myTotal = totals[user.uid] || 0;
-      const sorted = Object.values(totals).sort((a, b) => b - a);
-      const myRank = sorted.findIndex((t) => t === myTotal) + 1;
-      setRank(myRank);
+        const user = auth.currentUser;
+        if (!user) return;
+
+        // Get all users with their totals for this module
+        const usersWithTotals = Object.entries(totals).map(([userId, total]) => ({
+          userId,
+          total
+        }));
+
+        // Sort by total score descending
+        usersWithTotals.sort((a, b) => b.total - a.total);
+
+        // Find current user's rank
+        const userIndex = usersWithTotals.findIndex(user => user.userId === user.uid);
+        const myRank = userIndex !== -1 ? userIndex + 1 : null;
+        setRank(myRank);
+      } catch (error) {
+        console.error("Error fetching module rank:", error);
+        setRank(null);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchRank();
   }, [moduleId]);
 
-  return <>{rank ? `#${rank}` : "-"}</>;
+  return <>{loading ? "-" : (rank ? `#${rank}` : "-")}</>;
 };
 
 export default TraineeDashboard;
