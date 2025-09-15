@@ -21,7 +21,7 @@ const shuffleArray = (arr) => {
 };
 
 const TakeQuiz = () => {
-  const { moduleId, quizTitle } = useParams(); // receive moduleId and quizTitle
+  const { quizId } = useParams();
   const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState(null);
@@ -34,45 +34,53 @@ const TakeQuiz = () => {
 
   useEffect(() => {
     const fetchQuiz = async () => {
-      const moduleRef = doc(db, 'modules', moduleId);
-      const moduleSnap = await getDoc(moduleRef);
-      if (!moduleSnap.exists()) return;
+      const quizRef = doc(db, 'quizzes', quizId);
+      const quizSnap = await getDoc(quizRef);
+      if (quizSnap.exists()) {
+        const data = quizSnap.data();
 
-      const moduleData = moduleSnap.data();
-      const foundQuiz = moduleData.quizzes.find(q => q.title === quizTitle);
-      if (!foundQuiz) return;
+        // Shuffle questions + options
+        const randomizedQuestions = shuffleArray(
+          data.questions.map((q) => {
+            if (q.type === 'MCQ') {
+              return { ...q, options: shuffleArray(q.options) };
+            }
+            if (q.type === 'TrueFalse') {
+              return { ...q, options: shuffleArray(['True', 'False']) };
+            }
+            return q;
+          })
+        );
 
-      const randomizedQuestions = shuffleArray(
-        foundQuiz.questions.map((q) => {
-          if (q.type === 'MCQ') return { ...q, options: shuffleArray(q.options) };
-          if (q.type === 'TrueFalse') return { ...q, options: shuffleArray(['True', 'False']) };
-          return q;
-        })
-      );
+        setQuiz({ id: quizSnap.id, ...data });
+        setShuffledQuestions(randomizedQuestions);
 
-      setQuiz({ ...foundQuiz, moduleName: moduleData.name, moduleId });
-      setShuffledQuestions(randomizedQuestions);
+        const now = new Date();
+        const expiry = data.expiry?.seconds
+          ? new Date(data.expiry.seconds * 1000)
+          : new Date(data.expiry);
 
-      const now = new Date();
-      const start = foundQuiz.schedule?.seconds ? new Date(foundQuiz.schedule.seconds * 1000) : new Date(foundQuiz.schedule);
-      const end = foundQuiz.expiry?.seconds ? new Date(foundQuiz.expiry.seconds * 1000) : new Date(foundQuiz.expiry);
-      const remaining = Math.floor((end - now) / 1000);
-      setTimeLeft(remaining > 0 ? remaining : 0);
+        // End time = min(duration, expiry)
+        const endByDuration = new Date(
+          now.getTime() + data.duration * 60 * 1000
+        );
+        const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
+
+        const remaining = Math.floor((effectiveEnd - now) / 1000);
+        setTimeLeft(remaining > 0 ? remaining : 0);
+      }
     };
 
     fetchQuiz();
-  }, [moduleId, quizTitle]);
+  }, [quizId]);
 
   const handleSubmit = useCallback(async () => {
     if (!quiz || submitted) return;
 
-    // Use moduleId + quizTitle as unique key
-    const quizKey = `${quiz.moduleId}_${quiz.title}`;
-
-    // Check for duplicate submission
+    // Prevent duplicate submission
     const resultQuery = query(
       collection(db, 'quizResults'),
-      where('traineeKey', '==', quizKey),
+      where('quizId', '==', quiz.id),
       where('traineeId', '==', auth.currentUser.uid)
     );
     const resultSnap = await getDocs(resultQuery);
@@ -89,35 +97,40 @@ const TakeQuiz = () => {
       const given = (answers[i] || '').trim().toLowerCase();
       if (correct === given) total += 1;
     });
-    const finalScore = Math.round((total / shuffledQuestions.length) * 100);
+
+    const finalScore = Math.round(
+      (total / shuffledQuestions.length) * 100
+    );
     setScore(finalScore);
     setSubmitted(true);
     setShowPopup(true);
 
-    // Save result in quizResults
+    // Save result
     await addDoc(collection(db, 'quizResults'), {
-      traineeKey: quizKey,
-      quizTitle: quiz.title,
-      moduleId: quiz.moduleId,
-      moduleName: quiz.moduleName,
+      quizId: quiz.id,
       traineeId: auth.currentUser.uid,
       score: finalScore,
       timestamp: new Date(),
+      quizTitle: quiz.title,
+      moduleName: quiz.moduleName,
       duration: quiz.duration
     });
 
+    // Redirect after submission
     navigate('/trainee/modules');
   }, [quiz, shuffledQuestions, answers, submitted, navigate]);
 
+  // Timer effect
   useEffect(() => {
     if (submitted || timeLeft === null) return;
+
     if (timeLeft <= 0) {
       handleSubmit();
       return;
     }
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
           handleSubmit();
@@ -143,11 +156,17 @@ const TakeQuiz = () => {
   if (!quiz) return <div className="take-quiz-container">Loading quiz...</div>;
 
   const now = new Date();
-  const start = quiz.schedule?.seconds ? new Date(quiz.schedule.seconds * 1000) : new Date(quiz.schedule);
-  const expiry = quiz.expiry?.seconds ? new Date(quiz.expiry.seconds * 1000) : new Date(quiz.expiry);
+  const start = quiz.schedule?.seconds
+    ? new Date(quiz.schedule.seconds * 1000)
+    : new Date(quiz.schedule);
+  const expiry = quiz.expiry?.seconds
+    ? new Date(quiz.expiry.seconds * 1000)
+    : new Date(quiz.expiry);
 
-  if (now < start) return <div className="take-quiz-container">⛔ Quiz not yet available.</div>;
-  if (now > expiry && !submitted) return <div className="take-quiz-container">✔️ Quiz has expired.</div>;
+  if (now < start)
+    return <div className="take-quiz-container">⛔ Quiz not yet available.</div>;
+  if (now > expiry && !submitted)
+    return <div className="take-quiz-container">✔️ Quiz has expired.</div>;
 
   return (
     <div className="take-quiz-container">
@@ -155,11 +174,15 @@ const TakeQuiz = () => {
       <p className="quiz-meta">Module: {quiz.moduleName}</p>
       <p className="quiz-meta">Duration: {quiz.duration} minutes</p>
       <p className="quiz-meta">Expiry: {expiry.toLocaleString()}</p>
-      {!submitted && <p className="countdown">⏳ Time Left: {formatTime(timeLeft)}</p>}
+      {!submitted && (
+        <p className="countdown">⏳ Time Left: {formatTime(timeLeft)}</p>
+      )}
 
       {shuffledQuestions.map((q, i) => (
         <div key={i} className="question-block">
-          <p className="question-text">{i + 1}. {q.question}</p>
+          <p className="question-text">
+            {i + 1}. {q.question}
+          </p>
           {q.type === 'MCQ' && (
             <div className="options">
               {q.options.map((opt, j) => (
@@ -204,7 +227,9 @@ const TakeQuiz = () => {
       ))}
 
       {!submitted ? (
-        <button className="btn gold" onClick={handleSubmit}>Submit Quiz</button>
+        <button className="btn gold" onClick={handleSubmit}>
+          Submit Quiz
+        </button>
       ) : (
         <p className="score-display">🎉 Your Score: {score}%</p>
       )}
@@ -213,8 +238,12 @@ const TakeQuiz = () => {
         <div className="score-popup">
           <div className="popup-content">
             <h2>🎉 Quiz Completed</h2>
-            <p>Your Score: <strong>{score}%</strong></p>
-            <button className="btn gold" onClick={() => setShowPopup(false)}>Close</button>
+            <p>
+              Your Score: <strong>{score}%</strong>
+            </p>
+            <button className="btn gold" onClick={() => setShowPopup(false)}>
+              Close
+            </button>
           </div>
         </div>
       )}
