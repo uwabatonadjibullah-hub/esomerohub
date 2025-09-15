@@ -44,9 +44,9 @@ const TraineeModule = () => {
     const end = new Date(start.getTime() + quiz.duration * 60 * 1000);
 
     if (results[quiz.id]) return 'done'; // user already submitted
-    if (now > end) return 'missed';
-    if (now >= start && now <= end) return 'active';
-    if (now < start) return 'coming';
+    if (now >= start && now <= end) return 'active'; // quiz is live now
+    if (now > end) return 'missed'; // ended and no submission
+    if (now < start) return 'coming'; // not yet started
     return 'future';
   };
 
