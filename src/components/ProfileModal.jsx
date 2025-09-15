@@ -2,11 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import './ProfileModal.css';
 
 const ProfileModal = ({ onClose }) => {
   const [userInfo, setUserInfo] = useState({});
   const [average, setAverage] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -44,6 +47,15 @@ const ProfileModal = ({ onClose }) => {
     fetchProfile();
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login'); // redirect to login page
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   return (
     <div className="profile-modal-overlay">
       <div className="profile-modal">
@@ -57,7 +69,11 @@ const ProfileModal = ({ onClose }) => {
         {userInfo.role === 'trainee' && (
           <p><strong>Overall Marks:</strong> {average}%</p>
         )}
-        <button className="btn gold" onClick={onClose}>Close</button>
+        
+        <div className="modal-actions">
+          <button className="btn gold" onClick={onClose}>Close</button>
+          <button className="btn red" onClick={handleLogout}>🚪 Log Out</button>
+        </div>
       </div>
     </div>
   );
