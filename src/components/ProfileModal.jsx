@@ -72,7 +72,7 @@ const ProfileModal = ({ onClose }) => {
         
         <div className="modal-actions">
           <button className="btn gold" onClick={onClose}>Close</button>
-          <button className="btn red" onClick={handleLogout}>🚪 Log Out</button>
+          <button className="btn gold" onClick={handleLogout}>Log Out</button>
         </div>
       </div>
     </div>
