@@ -29,11 +29,12 @@ const TraineeDashboard = () => {
       const moduleSnap = await getDocs(collection(db, "modules"));
       const moduleMap = {};
       moduleSnap.forEach((docSnap) => {
-        moduleMap[docSnap.id] = docSnap.data().moduleName || "Unnamed Module";
+        // Changed from moduleName to name based on the screenshot
+        moduleMap[docSnap.id] = docSnap.data().name || "Unnamed Module";
       });
       setModulesMap(moduleMap);
 
-      // ✅ Load this trainee’s quiz results
+      // ✅ Load this trainee's quiz results
       const q = query(collection(db, "quizResults"), where("traineeId", "==", user.uid));
       const quizSnap = await getDocs(q);
       const traineeResults = quizSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
