@@ -12,25 +12,27 @@ const TraineeModule = () => {
 
   useEffect(() => {
     const fetchModulesAndResults = async () => {
-      // Get all modules
+      // Fetch all modules
       const moduleSnap = await getDocs(collection(db, 'modules'));
       const modulesData = moduleSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setModules(modulesData);
 
-      // Get user quiz results
-      const resultsQuery = query(
-        collection(db, 'quizResults'),
-        where('traineeId', '==', auth.currentUser?.uid)
-      );
-      const resultsSnap = await getDocs(resultsQuery);
+      // Fetch trainee's quiz results
+      if (auth.currentUser?.uid) {
+        const resultsQuery = query(
+          collection(db, 'quizResults'),
+          where('traineeId', '==', auth.currentUser.uid)
+        );
+        const resultsSnap = await getDocs(resultsQuery);
 
-      const resMap = {};
-      resultsSnap.forEach(doc => {
-        const data = doc.data();
-        resMap[`${data.moduleId}_${data.quizTitle}`] = data; // store quiz result by moduleId + quizTitle
-      });
-
-      setResults(resMap);
+        const resMap = {};
+        resultsSnap.forEach(doc => {
+          const data = doc.data();
+          // store result keyed by moduleId + quizTitle
+          resMap[`${data.moduleId}_${data.quizTitle}`] = data;
+        });
+        setResults(resMap);
+      }
     };
 
     fetchModulesAndResults();
@@ -57,6 +59,7 @@ const TraineeModule = () => {
   };
 
   const formatDate = (timestamp) => {
+    if (!timestamp) return 'N/A';
     const date = timestamp?.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
     return date.toLocaleString();
   };
@@ -82,7 +85,7 @@ const TraineeModule = () => {
       ) : (
         modules.map((mod) => (
           <div key={mod.id} className="module-card">
-            <h2 className="module-title">{mod.name}</h2>
+            <h2 className="module-title">{mod.moduleName || mod.name}</h2>
 
             {/* Lectures */}
             <div className="section">
