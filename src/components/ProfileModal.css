@@ -36,3 +36,9 @@
   cursor: pointer;
   font-weight: bold;
 }
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
