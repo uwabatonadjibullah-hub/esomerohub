@@ -1,22 +1,21 @@
 // src/pages/TakeQuiz.jsx
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   collection,
   addDoc,
   query,
   where,
-  getDocs
-} from 'firebase/firestore';
-import { auth, db } from '../firebase';
-import './TakeQuiz.css';
+  getDocs,
+} from "firebase/firestore";
+import { auth, db } from "../firebase";
+import "./TakeQuiz.css";
 
-const shuffleArray = (arr) => {
-  return arr
+const shuffleArray = (arr) =>
+  arr
     .map((item) => ({ item, sort: Math.random() }))
     .sort((a, b) => a.sort - b.sort)
     .map(({ item }) => item);
-};
 
 const TakeQuiz = () => {
   const { moduleId, quizTitle } = useParams();
@@ -31,94 +30,111 @@ const TakeQuiz = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [reviewMode, setReviewMode] = useState(false);
 
+  // Fetch module + quiz
   useEffect(() => {
     const fetchQuiz = async () => {
-      const moduleSnap = await getDocs(
-        query(collection(db, 'modules'), where('moduleId', '==', moduleId))
-      );
+      try {
+        const moduleSnap = await getDocs(
+          query(collection(db, "modules"), where("moduleId", "==", moduleId))
+        );
 
-      if (!moduleSnap.empty) {
+        if (moduleSnap.empty) return;
+
         const moduleDoc = moduleSnap.docs[0];
         const moduleData = moduleDoc.data();
 
-        const quiz = moduleData.quizzes.find(
+        const foundQuiz = moduleData.quizzes?.find(
           (q) => q.title === decodeURIComponent(quizTitle)
         );
+        if (!foundQuiz) return;
 
-        if (quiz) {
-          const randomizedQuestions = shuffleArray(
-            quiz.questions.map((q) => {
-              if (q.type === 'MCQ') {
-                return { ...q, options: shuffleArray(q.options) };
-              }
-              if (q.type === 'TrueFalse') {
-                return { ...q, options: shuffleArray(['True', 'False']) };
-              }
-              return q;
-            })
-          );
+        // Shuffle questions + options
+        const randomizedQuestions = shuffleArray(
+          foundQuiz.questions.map((q) => {
+            if (q.type === "MCQ") {
+              return { ...q, options: shuffleArray(q.options) };
+            }
+            if (q.type === "TrueFalse") {
+              return { ...q, options: shuffleArray(["True", "False"]) };
+            }
+            return q;
+          })
+        );
 
-          setQuiz({ ...quiz, moduleName: moduleData.moduleName });
-          setShuffledQuestions(randomizedQuestions);
+        setQuiz({ ...foundQuiz, moduleName: moduleData.moduleName });
+        setShuffledQuestions(randomizedQuestions);
 
-          const now = new Date();
-          const expiry = quiz.expiry?.seconds
-            ? new Date(quiz.expiry.seconds * 1000)
-            : new Date(quiz.expiry);
+        // Setup timer
+        const now = new Date();
+        const expiry = foundQuiz.expiry?.seconds
+          ? new Date(foundQuiz.expiry.seconds * 1000)
+          : new Date(foundQuiz.expiry);
 
-          const endByDuration = new Date(
-            now.getTime() + quiz.duration * 60 * 1000
-          );
-          const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
+        const endByDuration = new Date(
+          now.getTime() + foundQuiz.duration * 60 * 1000
+        );
+        const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
 
-          const remaining = Math.floor((effectiveEnd - now) / 1000);
-          setTimeLeft(remaining > 0 ? remaining : 0);
-        }
+        const remaining = Math.floor((effectiveEnd - now) / 1000);
+        setTimeLeft(remaining > 0 ? remaining : 0);
+      } catch (error) {
+        console.error("Error fetching quiz:", error);
       }
     };
 
     fetchQuiz();
   }, [moduleId, quizTitle]);
 
+  // Handle submission
   const handleSubmit = useCallback(async () => {
     if (!quiz || submitted) return;
 
-    const resultQuery = query(
-      collection(db, 'quizResults'),
-      where('moduleId', '==', moduleId),
-      where('quizTitle', '==', quiz.title),
-      where('traineeId', '==', auth.currentUser.uid)
-    );
-    const resultSnap = await getDocs(resultQuery);
-    if (!resultSnap.empty) {
+    try {
+      // Prevent duplicate submissions
+      const resultQuery = query(
+        collection(db, "quizResults"),
+        where("moduleId", "==", moduleId),
+        where("quizTitle", "==", quiz.title),
+        where("traineeId", "==", auth.currentUser.uid)
+      );
+      const resultSnap = await getDocs(resultQuery);
+      if (!resultSnap.empty) {
+        setSubmitted(true);
+        setShowPopup(true);
+        return;
+      }
+
+      // Score calculation
+      let total = 0;
+      shuffledQuestions.forEach((q, i) => {
+        const correct = q.answer.trim().toLowerCase();
+        const given = (answers[i] || "").trim().toLowerCase();
+        if (correct === given) total += 1;
+      });
+
+      const finalScore = Math.round(
+        (total / shuffledQuestions.length) * 100
+      );
+      setScore(finalScore);
       setSubmitted(true);
       setShowPopup(true);
-      return;
+
+      // Save result
+      await addDoc(collection(db, "quizResults"), {
+        moduleId,
+        traineeId: auth.currentUser.uid,
+        score: finalScore,
+        timestamp: new Date(),
+        quizTitle: quiz.title,
+        moduleName: quiz.moduleName,
+        duration: quiz.duration,
+      });
+    } catch (error) {
+      console.error("Error submitting quiz:", error);
     }
-
-    let total = 0;
-    shuffledQuestions.forEach((q, i) => {
-      const correct = q.answer.trim().toLowerCase();
-      const given = (answers[i] || '').trim().toLowerCase();
-      if (correct === given) total += 1;
-    });
-
-    const finalScore = Math.round((total / shuffledQuestions.length) * 100);
-    setScore(finalScore);
-    setSubmitted(true);
-    setShowPopup(true);
-
-    await addDoc(collection(db, 'quizResults'), {
-      moduleId,
-      traineeId: auth.currentUser.uid,
-      score: finalScore,
-      timestamp: new Date(),
-      quizTitle: quiz.title,
-      moduleName: quiz.moduleName,
-      duration: quiz.duration
-    });
   }, [quiz, shuffledQuestions, answers, submitted, moduleId]);
 
+  // Timer effect
   useEffect(() => {
     if (submitted || timeLeft === null) return;
 
@@ -144,7 +160,7 @@ const TakeQuiz = () => {
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
   const handleAnswerChange = (index, value) => {
@@ -153,6 +169,7 @@ const TakeQuiz = () => {
 
   if (!quiz) return <div className="take-quiz-container">Loading quiz...</div>;
 
+  // Schedule/expiry check
   const now = new Date();
   const start = quiz.schedule?.seconds
     ? new Date(quiz.schedule.seconds * 1000)
@@ -178,7 +195,7 @@ const TakeQuiz = () => {
 
       {shuffledQuestions.map((q, i) => {
         const correctAns = q.answer.trim().toLowerCase();
-        const userAns = (answers[i] || '').trim().toLowerCase();
+        const userAns = (answers[i] || "").trim().toLowerCase();
         const isCorrect = correctAns === userAns;
 
         return (
@@ -187,16 +204,17 @@ const TakeQuiz = () => {
               {i + 1}. {q.question}
             </p>
 
-            {q.type !== 'ShortAnswer' ? (
+            {q.type !== "ShortAnswer" ? (
               <div className="options">
                 {q.options.map((opt, j) => {
                   const optLower = opt.trim().toLowerCase();
+                  let className = "";
 
-                  let className = '';
                   if (reviewMode) {
-                    if (optLower === userAns && isCorrect) className = 'correct';
-                    if (optLower === userAns && !isCorrect) className = 'wrong';
-                    if (optLower === correctAns && !isCorrect) className = 'correct';
+                    if (optLower === userAns && isCorrect) className = "correct";
+                    if (optLower === userAns && !isCorrect) className = "wrong";
+                    if (optLower === correctAns && !isCorrect)
+                      className = "correct";
                   }
 
                   return (
@@ -218,15 +236,11 @@ const TakeQuiz = () => {
               <input
                 type="text"
                 placeholder="Your answer"
-                value={answers[i] || ''}
+                value={answers[i] || ""}
                 onChange={(e) => handleAnswerChange(i, e.target.value)}
                 disabled={submitted || reviewMode}
                 className={
-                  reviewMode
-                    ? isCorrect
-                      ? 'correct'
-                      : 'wrong'
-                    : ''
+                  reviewMode ? (isCorrect ? "correct" : "wrong") : ""
                 }
               />
             )}
@@ -255,7 +269,7 @@ const TakeQuiz = () => {
               </button>
               <button
                 className="btn gold"
-                onClick={() => navigate('/trainee/modules')}
+                onClick={() => navigate("/trainee/modules")}
               >
                 Back to Modules
               </button>
