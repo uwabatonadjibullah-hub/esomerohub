@@ -2,8 +2,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  doc,
-  getDoc,
   collection,
   addDoc,
   query,
@@ -13,10 +11,12 @@ import {
 import { auth, db } from '../firebase';
 import './TakeQuiz.css';
 
-const shuffleArray = (arr) =>
-  arr.map((item) => ({ item, sort: Math.random() }))
+const shuffleArray = (arr) => {
+  return arr
+    .map((item) => ({ item, sort: Math.random() }))
     .sort((a, b) => a.sort - b.sort)
     .map(({ item }) => item);
+};
 
 const TakeQuiz = () => {
   const { moduleId, quizTitle } = useParams();
@@ -29,51 +29,52 @@ const TakeQuiz = () => {
   const [score, setScore] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
 
-  // Load quiz from module
   useEffect(() => {
     const fetchQuiz = async () => {
-      const moduleRef = doc(db, 'modules', moduleId);
-      const moduleSnap = await getDoc(moduleRef);
-
-      if (!moduleSnap.exists()) return;
-
-      const moduleData = moduleSnap.data();
-      const foundQuiz = moduleData.quizzes?.find(
-        (q) => q.title === decodeURIComponent(quizTitle)
+      const moduleSnap = await getDocs(
+        query(collection(db, 'modules'), where('moduleId', '==', moduleId))
       );
 
-      if (!foundQuiz) return;
+      if (!moduleSnap.empty) {
+        const moduleDoc = moduleSnap.docs[0];
+        const moduleData = moduleDoc.data();
 
-      // Shuffle questions + options
-      const randomizedQuestions = shuffleArray(
-        foundQuiz.questions.map((q) => {
-          if (q.type === 'MCQ') {
-            return { ...q, options: shuffleArray(q.options) };
-          }
-          if (q.type === 'TrueFalse') {
-            return { ...q, options: shuffleArray(['True', 'False']) };
-          }
-          return q;
-        })
-      );
+        const quiz = moduleData.quizzes.find(
+          (q) => q.title === decodeURIComponent(quizTitle)
+        );
 
-      setQuiz({ ...foundQuiz, moduleName: moduleData.moduleName });
-      setShuffledQuestions(randomizedQuestions);
+        if (quiz) {
+          const randomizedQuestions = shuffleArray(
+            quiz.questions.map((q) => {
+              if (q.type === 'MCQ') {
+                return { ...q, options: shuffleArray(q.options) };
+              }
+              if (q.type === 'TrueFalse') {
+                return { ...q, options: shuffleArray(['True', 'False']) };
+              }
+              return q;
+            })
+          );
 
-      // Timer setup
-      const now = new Date();
-      const expiry = foundQuiz.expiry?.seconds
-        ? new Date(foundQuiz.expiry.seconds * 1000)
-        : new Date(foundQuiz.expiry);
+          setQuiz({ ...quiz, moduleName: moduleData.moduleName });
+          setShuffledQuestions(randomizedQuestions);
 
-      const endByDuration = new Date(
-        now.getTime() + foundQuiz.duration * 60 * 1000
-      );
-      const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
+          const now = new Date();
+          const expiry = quiz.expiry?.seconds
+            ? new Date(quiz.expiry.seconds * 1000)
+            : new Date(quiz.expiry);
 
-      const remaining = Math.floor((effectiveEnd - now) / 1000);
-      setTimeLeft(remaining > 0 ? remaining : 0);
+          const endByDuration = new Date(
+            now.getTime() + quiz.duration * 60 * 1000
+          );
+          const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
+
+          const remaining = Math.floor((effectiveEnd - now) / 1000);
+          setTimeLeft(remaining > 0 ? remaining : 0);
+        }
+      }
     };
 
     fetchQuiz();
@@ -82,7 +83,6 @@ const TakeQuiz = () => {
   const handleSubmit = useCallback(async () => {
     if (!quiz || submitted) return;
 
-    // Prevent duplicate submission
     const resultQuery = query(
       collection(db, 'quizResults'),
       where('moduleId', '==', moduleId),
@@ -96,7 +96,6 @@ const TakeQuiz = () => {
       return;
     }
 
-    // Calculate score
     let total = 0;
     shuffledQuestions.forEach((q, i) => {
       const correct = q.answer.trim().toLowerCase();
@@ -104,29 +103,22 @@ const TakeQuiz = () => {
       if (correct === given) total += 1;
     });
 
-    const finalScore = Math.round(
-      (total / shuffledQuestions.length) * 100
-    );
+    const finalScore = Math.round((total / shuffledQuestions.length) * 100);
     setScore(finalScore);
     setSubmitted(true);
     setShowPopup(true);
 
-    // Save result
     await addDoc(collection(db, 'quizResults'), {
       moduleId,
-      quizTitle: quiz.title,
       traineeId: auth.currentUser.uid,
       score: finalScore,
       timestamp: new Date(),
+      quizTitle: quiz.title,
       moduleName: quiz.moduleName,
       duration: quiz.duration
     });
+  }, [quiz, shuffledQuestions, answers, submitted, moduleId]);
 
-    // Redirect after submission
-    navigate('/trainee/modules');
-  }, [quiz, shuffledQuestions, answers, submitted, navigate, moduleId]);
-
-  // Timer effect
   useEffect(() => {
     if (submitted || timeLeft === null) return;
 
@@ -184,53 +176,63 @@ const TakeQuiz = () => {
         <p className="countdown">⏳ Time Left: {formatTime(timeLeft)}</p>
       )}
 
-      {shuffledQuestions.map((q, i) => (
-        <div key={i} className="question-block">
-          <p className="question-text">
-            {i + 1}. {q.question}
-          </p>
-          {q.type === 'MCQ' && (
-            <div className="options">
-              {q.options.map((opt, j) => (
-                <label key={j}>
-                  <input
-                    type="radio"
-                    name={`q${i}`}
-                    value={opt}
-                    onChange={() => handleAnswerChange(i, opt)}
-                    disabled={submitted}
-                  />
-                  {String.fromCharCode(65 + j)}. {opt}
-                </label>
-              ))}
-            </div>
-          )}
-          {q.type === 'TrueFalse' && (
-            <div className="options">
-              {q.options.map((opt, j) => (
-                <label key={j}>
-                  <input
-                    type="radio"
-                    name={`q${i}`}
-                    value={opt}
-                    onChange={() => handleAnswerChange(i, opt)}
-                    disabled={submitted}
-                  />
-                  {String.fromCharCode(65 + j)}. {opt}
-                </label>
-              ))}
-            </div>
-          )}
-          {q.type === 'ShortAnswer' && (
-            <input
-              type="text"
-              placeholder="Your answer"
-              onChange={(e) => handleAnswerChange(i, e.target.value)}
-              disabled={submitted}
-            />
-          )}
-        </div>
-      ))}
+      {shuffledQuestions.map((q, i) => {
+        const correctAns = q.answer.trim().toLowerCase();
+        const userAns = (answers[i] || '').trim().toLowerCase();
+        const isCorrect = correctAns === userAns;
+
+        return (
+          <div key={i} className="question-block">
+            <p className="question-text">
+              {i + 1}. {q.question}
+            </p>
+
+            {q.type !== 'ShortAnswer' ? (
+              <div className="options">
+                {q.options.map((opt, j) => {
+                  const optLower = opt.trim().toLowerCase();
+
+                  let className = '';
+                  if (reviewMode) {
+                    if (optLower === userAns && isCorrect) className = 'correct';
+                    if (optLower === userAns && !isCorrect) className = 'wrong';
+                    if (optLower === correctAns && !isCorrect) className = 'correct';
+                  }
+
+                  return (
+                    <label key={j} className={className}>
+                      <input
+                        type="radio"
+                        name={`q${i}`}
+                        value={opt}
+                        onChange={() => handleAnswerChange(i, opt)}
+                        disabled={submitted || reviewMode}
+                        checked={answers[i] === opt}
+                      />
+                      {String.fromCharCode(65 + j)}. {opt}
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <input
+                type="text"
+                placeholder="Your answer"
+                value={answers[i] || ''}
+                onChange={(e) => handleAnswerChange(i, e.target.value)}
+                disabled={submitted || reviewMode}
+                className={
+                  reviewMode
+                    ? isCorrect
+                      ? 'correct'
+                      : 'wrong'
+                    : ''
+                }
+              />
+            )}
+          </div>
+        );
+      })}
 
       {!submitted ? (
         <button className="btn gold" onClick={handleSubmit}>
@@ -247,9 +249,17 @@ const TakeQuiz = () => {
             <p>
               Your Score: <strong>{score}%</strong>
             </p>
-            <button className="btn gold" onClick={() => setShowPopup(false)}>
-              Close
-            </button>
+            <div className="popup-buttons">
+              <button className="btn gold" onClick={() => setReviewMode(true)}>
+                Review
+              </button>
+              <button
+                className="btn gold"
+                onClick={() => navigate('/trainee/modules')}
+              >
+                Back to Modules
+              </button>
+            </div>
           </div>
         </div>
       )}
