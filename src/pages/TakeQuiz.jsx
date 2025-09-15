@@ -43,7 +43,7 @@ const TakeQuiz = () => {
 
         const moduleData = moduleSnap.data();
 
-        // Match quiz by title (case + space insensitive)
+        // Match quiz by title
         const foundQuiz = moduleData.quizzes?.find(
           (q) =>
             q.title.toLowerCase().trim() ===
@@ -123,7 +123,7 @@ const TakeQuiz = () => {
       setSubmitted(true);
       setShowPopup(true);
 
-      // Save result (this will auto-create quizResults if it doesn’t exist yet)
+      // Save result
       await addDoc(collection(db, "quizResults"), {
         moduleId,
         quizTitle: quiz.title,
@@ -263,11 +263,24 @@ const TakeQuiz = () => {
         <button className="btn gold" onClick={handleSubmit}>
           Submit Quiz
         </button>
-      ) : (
+      ) : !reviewMode ? (
         <p className="score-display">🎉 Your Score: {score}%</p>
+      ) : null}
+
+      {/* ✅ Back button at bottom in review mode */}
+      {reviewMode && (
+        <div style={{ marginTop: "2rem", textAlign: "center" }}>
+          <button
+            className="btn gold"
+            onClick={() => navigate("/trainee/modules")}
+          >
+            ⬅ Back to Modules
+          </button>
+        </div>
       )}
 
-      {showPopup && (
+      {/* ✅ Show popup only if not in review mode */}
+      {showPopup && !reviewMode && (
         <div className="score-popup">
           <div className="popup-content">
             <h2>🎉 Quiz Completed</h2>
@@ -275,7 +288,13 @@ const TakeQuiz = () => {
               Your Score: <strong>{score}%</strong>
             </p>
             <div className="popup-buttons">
-              <button className="btn gold" onClick={() => setReviewMode(true)}>
+              <button
+                className="btn gold"
+                onClick={() => {
+                  setReviewMode(true);
+                  setShowPopup(false); // 🔑 close popup on review
+                }}
+              >
                 Review
               </button>
               <button
