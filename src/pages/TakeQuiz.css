@@ -1,3 +1,6 @@
+/* ================================
+   Main Quiz Container
+================================ */
 .take-quiz-container {
   background-color: #000;
   color: #fff;
@@ -10,7 +13,7 @@
 }
 
 .quiz-title {
-  color: #d4af37;
+  color: #d4af37; /* gold */
   font-size: 2rem;
   margin-bottom: 1rem;
   text-align: center;
@@ -24,6 +27,9 @@
   font-size: 1rem;
 }
 
+/* ================================
+   Question Blocks
+================================ */
 .question-block {
   width: 100%;
   max-width: 700px;
@@ -41,13 +47,25 @@
   font-size: 1.1rem;
 }
 
+/* Options */
 .options label {
   display: block;
   margin-bottom: 0.5rem;
   cursor: pointer;
   font-size: 1rem;
+  padding: 0.6rem;
+  background: #222;
+  border-radius: 6px;
+  border: 1px solid #333;
+  transition: background 0.2s, transform 0.1s;
 }
 
+.options label:hover {
+  background: #333;
+  transform: scale(1.02);
+}
+
+/* Text inputs */
 input[type="text"] {
   width: 100%;
   padding: 0.6rem;
@@ -59,6 +77,9 @@ input[type="text"] {
   box-sizing: border-box;
 }
 
+/* ================================
+   Buttons
+================================ */
 .btn.gold {
   background-color: #d4af37;
   color: #000;
@@ -75,6 +96,9 @@ input[type="text"] {
   transform: scale(1.05);
 }
 
+/* ================================
+   Score & Countdown
+================================ */
 .score-display {
   text-align: center;
   font-size: 1.3rem;
@@ -89,6 +113,9 @@ input[type="text"] {
   margin-bottom: 1rem;
 }
 
+/* ================================
+   Popup (Results)
+================================ */
 .score-popup {
   position: fixed;
   top: 0;
@@ -125,21 +152,52 @@ input[type="text"] {
   margin-top: 1rem;
 }
 
-/* Responsive adjustments */
+/* ================================
+   Review Mode Highlights
+================================ */
+/* Correct answers */
+.options label.correct {
+  background-color: rgba(40, 167, 69, 0.15); /* subtle green overlay */
+  border: 2px solid #28a745;
+  color: #28a745;
+  font-weight: bold;
+}
+
+/* Wrong answers */
+.options label.wrong {
+  background-color: rgba(220, 53, 69, 0.15); /* subtle red overlay */
+  border: 2px solid #dc3545;
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Short answers */
+input.correct {
+  background-color: rgba(40, 167, 69, 0.15);
+  border: 2px solid #28a745;
+  color: #28a745;
+}
+
+input.wrong {
+  background-color: rgba(220, 53, 69, 0.15);
+  border: 2px solid #dc3545;
+  color: #dc3545;
+}
+
+/* ================================
+   Responsive Adjustments
+================================ */
 @media (max-width: 768px) {
   .quiz-title {
     font-size: 1.5rem;
   }
-
   .question-text {
     font-size: 1rem;
   }
-
   .btn.gold {
     padding: 0.5rem 1rem;
     font-size: 0.95rem;
   }
-
   .score-display,
   .countdown {
     font-size: 1.1rem;
@@ -150,121 +208,18 @@ input[type="text"] {
   .quiz-title {
     font-size: 1.2rem;
   }
-
   .question-text {
     font-size: 0.95rem;
   }
-
   .options label {
     font-size: 0.9rem;
+    padding: 0.5rem;
   }
-
   .btn.gold {
     width: 100%;
     padding: 0.5rem 0;
   }
-
   .popup-content {
     padding: 1.5rem;
-  }
-}
-
-/* ✅ Highlight styles for review mode */
-.options label.correct {
-  background-color: #d4edda; /* light green */
-  border: 2px solid #28a745;
-  border-radius: 6px;
-  padding: 6px 10px;
-  display: block; /* stack for readability */
-  margin: 6px 0;
-  font-size: 0.95rem;
-  word-break: break-word;
-}
-
-.options label.wrong {
-  background-color: #f8d7da; /* light red */
-  border: 2px solid #dc3545;
-  border-radius: 6px;
-  padding: 6px 10px;
-  display: block;
-  margin: 6px 0;
-  font-size: 0.95rem;
-  word-break: break-word;
-}
-
-/* ✅ For short answers */
-input.correct {
-  background-color: #d4edda;
-  border: 2px solid #28a745;
-}
-
-input.wrong {
-  background-color: #f8d7da;
-  border: 2px solid #dc3545;
-}
-
-/* ✅ Popup styles (responsive) */
-.score-popup {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px; /* prevent cutoff on small screens */
-  z-index: 1000;
-}
-
-.popup-content {
-  background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  width: 100%;
-  max-width: 400px; /* center box but responsive */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.popup-buttons {
-  margin-top: 15px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.popup-buttons .btn {
-  flex: 1 1 auto;
-  min-width: 120px;
-  padding: 10px;
-  font-size: 0.9rem;
-}
-
-/* ✅ Question block spacing */
-.question-block {
-  margin-bottom: 20px;
-  padding: 12px;
-  border-radius: 8px;
-  background: #f9f9f9;
-}
-
-.question-text {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-/* ✅ Make it mobile-friendly */
-@media (max-width: 600px) {
-  .quiz-title {
-    font-size: 1.2rem;
-  }
-  .quiz-meta, .countdown {
-    font-size: 0.9rem;
-  }
-  .popup-content {
-    padding: 15px;
   }
 }
