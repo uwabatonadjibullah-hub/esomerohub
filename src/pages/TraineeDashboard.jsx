@@ -10,6 +10,7 @@ const TraineeDashboard = () => {
   const [modules, setModules] = useState([]);
   const [scores, setScores] = useState({});
   const [rank, setRank] = useState(null);
+  const [quizzes, setQuizzes] = useState([]); // ✅ store quizzes
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,13 +29,25 @@ const TraineeDashboard = () => {
       const moduleList = moduleSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setModules(moduleList);
 
+      // ✅ collect quizzes from modules
+      const allQuizzes = [];
+      moduleList.forEach(m => {
+        if (m.quizzes) {
+          m.quizzes.forEach(q => {
+            allQuizzes.push({ ...q, moduleId: m.id, moduleName: m.name });
+          });
+        }
+      });
+      setQuizzes(allQuizzes);
+
+      // ✅ fetch scores from quizzes collection (your existing logic)
       const quizSnap = await getDocs(collection(db, 'quizzes'));
-      const allQuizzes = quizSnap.docs.map(doc => doc.data());
+      const allQuizDocs = quizSnap.docs.map(doc => doc.data());
 
       const traineeScores = {};
       const facultyScores = [];
 
-      allQuizzes.forEach(quiz => {
+      allQuizDocs.forEach(quiz => {
         const { module, type, scores } = quiz;
         scores.forEach(s => {
           if (s.studentId === user.uid) {
@@ -78,7 +91,6 @@ const TraineeDashboard = () => {
     return modules.length ? (sum / modules.length).toFixed(1) : '0.0';
   };
 
-  // ✅ Export CSV function
   const handleExportCSV = () => {
     const headers = ['Module', 'Quiz', 'CAT', 'Total'];
     const rows = modules.map(m => [
@@ -103,9 +115,19 @@ const TraineeDashboard = () => {
     document.body.removeChild(link);
   };
 
+  // ✅ check if quiz is live
+  const isQuizActive = (moduleName) => {
+    const now = new Date();
+    const moduleQuiz = quizzes.find(q => q.moduleName === moduleName);
+    if (!moduleQuiz) return false;
+
+    const start = new Date(moduleQuiz.schedule);
+    const end = new Date(moduleQuiz.expiry);
+    return now >= start && now <= end;
+  };
+
   return (
     <div className="dashboard-container">
-      {/* Sticky Navigation Bar */}
       <div className="trainee-nav">
         <button className="btn" onClick={() => navigate('/trainee')}>
           🏡 Home
@@ -135,6 +157,7 @@ const TraineeDashboard = () => {
             <th>Quiz</th>
             <th>CAT</th>
             <th>Total</th>
+            <th>Action</th> {/* ✅ new column */}
           </tr>
         </thead>
         <tbody>
@@ -144,15 +167,27 @@ const TraineeDashboard = () => {
               <td>{scores[mod.name]?.Quiz ?? '-'}</td>
               <td>{scores[mod.name]?.CAT ?? '-'}</td>
               <td>{getModuleTotal(mod.name)}</td>
+              <td>
+                {isQuizActive(mod.name) ? (
+                  <button
+                    className="btn gold"
+                    onClick={() => navigate(`/take-quiz/${mod.id}`)}
+                  >
+                    Take Quiz
+                  </button>
+                ) : (
+                  <span>Not Available</span>
+                )}
+              </td>
             </tr>
           ))}
           <tr className="average-row">
             <td><strong>Average (over 100)</strong></td>
-            <td colSpan="3">{getAverage()}</td>
+            <td colSpan="4">{getAverage()}</td>
           </tr>
           <tr className="rank-row">
             <td><strong>Rank in Faculty</strong></td>
-            <td colSpan="3">{rank ? `#${rank}` : 'Calculating...'}</td>
+            <td colSpan="4">{rank ? `#${rank}` : 'Calculating...'}</td>
           </tr>
         </tbody>
       </table>
