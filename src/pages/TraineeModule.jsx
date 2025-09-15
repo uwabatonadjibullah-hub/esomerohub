@@ -38,16 +38,25 @@ const TraineeModule = () => {
 
   const getQuizStatus = (quiz) => {
     const now = new Date();
+
     const start = quiz.schedule?.seconds
       ? new Date(quiz.schedule.seconds * 1000)
       : new Date(quiz.schedule);
-    const end = new Date(start.getTime() + quiz.duration * 60 * 1000);
 
-    if (results[quiz.id]) return 'done'; // user already submitted
-    if (now >= start && now <= end) return 'active'; // quiz is live now
-    if (now > end) return 'missed'; // ended and no submission
-    if (now < start) return 'coming'; // not yet started
+    const end = quiz.expiry?.seconds
+      ? new Date(quiz.expiry.seconds * 1000)
+      : new Date(quiz.expiry);
+
+    if (results[quiz.id]) return 'done';
+    if (now >= start && now <= end) return 'active';
+    if (now > end) return 'missed';
+    if (now < start) return 'coming';
     return 'future';
+  };
+
+  const formatDate = (timestamp) => {
+    const date = timestamp?.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+    return date.toLocaleString();
   };
 
   return (
@@ -98,9 +107,15 @@ const TraineeModule = () => {
                 <ul className="quiz-list">
                   {mod.quizzes.map((quiz, i) => {
                     const status = getQuizStatus(quiz);
+                    const startStr = formatDate(quiz.schedule);
+                    const endStr = formatDate(quiz.expiry);
+
                     return (
                       <li key={i} className={`quiz-item ${status}`}>
                         <span>{quiz.title}</span>
+                        <div className="quiz-dates">
+                          <small>Start: {startStr}</small> | <small>End: {endStr}</small>
+                        </div>
                         {status === 'active' && (
                           <button
                             className="btn gold"
