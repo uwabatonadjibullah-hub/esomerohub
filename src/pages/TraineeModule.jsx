@@ -1,33 +1,53 @@
 // src/pages/TraineeModule.jsx
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import './TraineeModule.css';
 
 const TraineeModule = () => {
   const [modules, setModules] = useState([]);
+  const [userScores, setUserScores] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchModules = async () => {
+    const fetchModulesAndScores = async () => {
       const moduleSnap = await getDocs(collection(db, 'modules'));
       const data = moduleSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setModules(data);
+
+      // ✅ fetch user scores
+      const user = auth.currentUser;
+      if (user) {
+        const scoresSnap = await getDocs(collection(db, 'quizzes'));
+        const scoresData = {};
+        scoresSnap.forEach(docSnap => {
+          const quiz = docSnap.data();
+          if (quiz.scores) {
+            quiz.scores.forEach(s => {
+              if (s.studentId === user.uid) {
+                scoresData[docSnap.id] = s; // store score record
+              }
+            });
+          }
+        });
+        setUserScores(scoresData);
+      }
     };
 
-    fetchModules();
+    fetchModulesAndScores();
   }, []);
 
-  const getQuizStatus = (quiz) => {
+  const getQuizStatus = (quiz, quizId) => {
     const now = new Date();
     const start = new Date(quiz.schedule.seconds * 1000);
-    const end = new Date(start.getTime() + quiz.duration * 60 * 1000);
-    const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const end = new Date(quiz.expiry.seconds * 1000);
 
-    if (now > end) return 'done';
+    const attempted = userScores[quizId];
+
+    if (attempted) return 'done';
     if (now >= start && now <= end) return 'active';
-    if (start <= oneWeekFromNow) return 'coming';
+    if (now > end) return 'missed';
     return 'future';
   };
 
@@ -76,21 +96,24 @@ const TraineeModule = () => {
               {mod.quizzes?.length > 0 ? (
                 <ul className="quiz-list">
                   {mod.quizzes.map((quiz, i) => {
-                    const status = getQuizStatus(quiz);
+                    // ⚡ ensure quiz has a stable id
+                    const quizId = quiz.id || `${mod.id}-quiz-${i}`;
+                    const status = getQuizStatus(quiz, quizId);
+
                     return (
                       <li key={i} className={`quiz-item ${status}`}>
                         <span>{quiz.title}</span>
                         {status === 'active' && (
                           <button
                             className="btn gold"
-                            onClick={() => navigate(`/trainee/quiz/${quiz.id}`)}
+                            onClick={() => navigate(`/trainee/quiz/${quizId}`)}
                           >
                             Take Quiz
                           </button>
                         )}
                         {status === 'done' && <span className="status done">✔️ Done</span>}
-                        {status === 'coming' && <span className="status coming">🕒 Coming Soon</span>}
-                        {status === 'future' && <span className="status future">⛔ Not to be done</span>}
+                        {status === 'missed' && <span className="status missed">❌ Missed</span>}
+                        {status === 'future' && <span className="status future">⏳ Not Started</span>}
                       </li>
                     );
                   })}
