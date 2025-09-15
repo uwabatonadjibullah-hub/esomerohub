@@ -168,3 +168,103 @@ input[type="text"] {
     padding: 1.5rem;
   }
 }
+
+/* ✅ Highlight styles for review mode */
+.options label.correct {
+  background-color: #d4edda; /* light green */
+  border: 2px solid #28a745;
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: block; /* stack for readability */
+  margin: 6px 0;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.options label.wrong {
+  background-color: #f8d7da; /* light red */
+  border: 2px solid #dc3545;
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: block;
+  margin: 6px 0;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+/* ✅ For short answers */
+input.correct {
+  background-color: #d4edda;
+  border: 2px solid #28a745;
+}
+
+input.wrong {
+  background-color: #f8d7da;
+  border: 2px solid #dc3545;
+}
+
+/* ✅ Popup styles (responsive) */
+.score-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px; /* prevent cutoff on small screens */
+  z-index: 1000;
+}
+
+.popup-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  width: 100%;
+  max-width: 400px; /* center box but responsive */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.popup-buttons {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.popup-buttons .btn {
+  flex: 1 1 auto;
+  min-width: 120px;
+  padding: 10px;
+  font-size: 0.9rem;
+}
+
+/* ✅ Question block spacing */
+.question-block {
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.question-text {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* ✅ Make it mobile-friendly */
+@media (max-width: 600px) {
+  .quiz-title {
+    font-size: 1.2rem;
+  }
+  .quiz-meta, .countdown {
+    font-size: 0.9rem;
+  }
+  .popup-content {
+    padding: 15px;
+  }
+}
