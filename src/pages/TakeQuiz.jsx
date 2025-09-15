@@ -42,9 +42,14 @@ const TakeQuiz = () => {
         if (!moduleSnap.exists()) return;
 
         const moduleData = moduleSnap.data();
+
+        // Match quiz by title (case + space insensitive)
         const foundQuiz = moduleData.quizzes?.find(
-          (q) => q.title === decodeURIComponent(quizTitle)
+          (q) =>
+            q.title.toLowerCase().trim() ===
+            decodeURIComponent(quizTitle).toLowerCase().trim()
         );
+
         if (!foundQuiz) return;
 
         // Shuffle questions + options
@@ -118,7 +123,7 @@ const TakeQuiz = () => {
       setSubmitted(true);
       setShowPopup(true);
 
-      // Save result
+      // Save result (this will auto-create quizResults if it doesn’t exist yet)
       await addDoc(collection(db, "quizResults"), {
         moduleId,
         quizTitle: quiz.title,
@@ -166,7 +171,10 @@ const TakeQuiz = () => {
     setAnswers({ ...answers, [index]: value });
   };
 
-  if (!quiz) return <div className="take-quiz-container">Loading quiz...</div>;
+  if (!quiz)
+    return (
+      <div className="take-quiz-container">Loading quiz...</div>
+    );
 
   // Availability check
   const now = new Date();
@@ -178,9 +186,13 @@ const TakeQuiz = () => {
     : new Date(quiz.expiry);
 
   if (now < start)
-    return <div className="take-quiz-container">⛔ Quiz not yet available.</div>;
+    return (
+      <div className="take-quiz-container">⛔ Quiz not yet available.</div>
+    );
   if (now > expiry && !submitted)
-    return <div className="take-quiz-container">✔️ Quiz has expired.</div>;
+    return (
+      <div className="take-quiz-container">✔️ Quiz has expired.</div>
+    );
 
   return (
     <div className="take-quiz-container">
