@@ -39,7 +39,7 @@ function App() {
       <Route path="/trainee/modules" element={<TraineeModule />} />
       <Route path="/trainee/dashboard" element={<TraineeDashboard />} /> {/* ✅ NEW */}
       <Route path="/trainee/upcoming-quizzes" element={<UpcomingQuizzes />} /> {/* ✅ NEW */}
-      <Route path="/trainee/quiz/:quizId" element={<TakeQuiz />} /> {/* ✅ NEW */}
+      <Route path="/trainee/quiz/:moduleId/:quizTitle" element={<TakeQuiz />} />  {/* ✅ NEW */}
     </Routes>
   );
 }
