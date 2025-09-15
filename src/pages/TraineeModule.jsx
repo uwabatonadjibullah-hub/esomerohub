@@ -27,7 +27,7 @@ const TraineeModule = () => {
       const resMap = {};
       resultsSnap.forEach(doc => {
         const data = doc.data();
-        resMap[data.quizId] = data; // store quiz result by quizId
+        resMap[`${data.moduleId}_${data.quizTitle}`] = data; // store quiz result by moduleId + quizTitle
       });
 
       setResults(resMap);
@@ -36,7 +36,7 @@ const TraineeModule = () => {
     fetchModulesAndResults();
   }, []);
 
-  const getQuizStatus = (quiz) => {
+  const getQuizStatus = (moduleId, quiz) => {
     const now = new Date();
 
     const start = quiz.schedule?.seconds
@@ -47,7 +47,9 @@ const TraineeModule = () => {
       ? new Date(quiz.expiry.seconds * 1000)
       : new Date(quiz.expiry);
 
-    if (results[quiz.id]) return 'done';
+    const key = `${moduleId}_${quiz.title}`;
+
+    if (results[key]) return 'done';
     if (now >= start && now <= end) return 'active';
     if (now > end) return 'missed';
     if (now < start) return 'coming';
@@ -106,7 +108,7 @@ const TraineeModule = () => {
               {mod.quizzes?.length > 0 ? (
                 <ul className="quiz-list">
                   {mod.quizzes.map((quiz, i) => {
-                    const status = getQuizStatus(quiz);
+                    const status = getQuizStatus(mod.id, quiz);
                     const startStr = formatDate(quiz.schedule);
                     const endStr = formatDate(quiz.expiry);
 
@@ -119,7 +121,11 @@ const TraineeModule = () => {
                         {status === 'active' && (
                           <button
                             className="btn gold"
-                            onClick={() => navigate(`/trainee/quiz/${quiz.id}`)}
+                            onClick={() =>
+                              navigate(
+                                `/trainee/quiz/${mod.id}/${encodeURIComponent(quiz.title)}`
+                              )
+                            }
                           >
                             Take Quiz
                           </button>
