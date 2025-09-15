@@ -13,15 +13,13 @@ import {
 import { auth, db } from '../firebase';
 import './TakeQuiz.css';
 
-const shuffleArray = (arr) => {
-  return arr
-    .map((item) => ({ item, sort: Math.random() }))
+const shuffleArray = (arr) =>
+  arr.map((item) => ({ item, sort: Math.random() }))
     .sort((a, b) => a.sort - b.sort)
     .map(({ item }) => item);
-};
 
 const TakeQuiz = () => {
-  const { quizId } = useParams();
+  const { moduleId, quizTitle } = useParams();
   const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState(null);
@@ -32,47 +30,54 @@ const TakeQuiz = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
 
+  // Load quiz from module
   useEffect(() => {
     const fetchQuiz = async () => {
-      const quizRef = doc(db, 'quizzes', quizId);
-      const quizSnap = await getDoc(quizRef);
-      if (quizSnap.exists()) {
-        const data = quizSnap.data();
+      const moduleRef = doc(db, 'modules', moduleId);
+      const moduleSnap = await getDoc(moduleRef);
 
-        // Shuffle questions + options
-        const randomizedQuestions = shuffleArray(
-          data.questions.map((q) => {
-            if (q.type === 'MCQ') {
-              return { ...q, options: shuffleArray(q.options) };
-            }
-            if (q.type === 'TrueFalse') {
-              return { ...q, options: shuffleArray(['True', 'False']) };
-            }
-            return q;
-          })
-        );
+      if (!moduleSnap.exists()) return;
 
-        setQuiz({ id: quizSnap.id, ...data });
-        setShuffledQuestions(randomizedQuestions);
+      const moduleData = moduleSnap.data();
+      const foundQuiz = moduleData.quizzes?.find(
+        (q) => q.title === decodeURIComponent(quizTitle)
+      );
 
-        const now = new Date();
-        const expiry = data.expiry?.seconds
-          ? new Date(data.expiry.seconds * 1000)
-          : new Date(data.expiry);
+      if (!foundQuiz) return;
 
-        // End time = min(duration, expiry)
-        const endByDuration = new Date(
-          now.getTime() + data.duration * 60 * 1000
-        );
-        const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
+      // Shuffle questions + options
+      const randomizedQuestions = shuffleArray(
+        foundQuiz.questions.map((q) => {
+          if (q.type === 'MCQ') {
+            return { ...q, options: shuffleArray(q.options) };
+          }
+          if (q.type === 'TrueFalse') {
+            return { ...q, options: shuffleArray(['True', 'False']) };
+          }
+          return q;
+        })
+      );
 
-        const remaining = Math.floor((effectiveEnd - now) / 1000);
-        setTimeLeft(remaining > 0 ? remaining : 0);
-      }
+      setQuiz({ ...foundQuiz, moduleName: moduleData.moduleName });
+      setShuffledQuestions(randomizedQuestions);
+
+      // Timer setup
+      const now = new Date();
+      const expiry = foundQuiz.expiry?.seconds
+        ? new Date(foundQuiz.expiry.seconds * 1000)
+        : new Date(foundQuiz.expiry);
+
+      const endByDuration = new Date(
+        now.getTime() + foundQuiz.duration * 60 * 1000
+      );
+      const effectiveEnd = endByDuration < expiry ? endByDuration : expiry;
+
+      const remaining = Math.floor((effectiveEnd - now) / 1000);
+      setTimeLeft(remaining > 0 ? remaining : 0);
     };
 
     fetchQuiz();
-  }, [quizId]);
+  }, [moduleId, quizTitle]);
 
   const handleSubmit = useCallback(async () => {
     if (!quiz || submitted) return;
@@ -80,7 +85,8 @@ const TakeQuiz = () => {
     // Prevent duplicate submission
     const resultQuery = query(
       collection(db, 'quizResults'),
-      where('quizId', '==', quiz.id),
+      where('moduleId', '==', moduleId),
+      where('quizTitle', '==', quiz.title),
       where('traineeId', '==', auth.currentUser.uid)
     );
     const resultSnap = await getDocs(resultQuery);
@@ -107,18 +113,18 @@ const TakeQuiz = () => {
 
     // Save result
     await addDoc(collection(db, 'quizResults'), {
-      quizId: quiz.id,
+      moduleId,
+      quizTitle: quiz.title,
       traineeId: auth.currentUser.uid,
       score: finalScore,
       timestamp: new Date(),
-      quizTitle: quiz.title,
       moduleName: quiz.moduleName,
       duration: quiz.duration
     });
 
     // Redirect after submission
     navigate('/trainee/modules');
-  }, [quiz, shuffledQuestions, answers, submitted, navigate]);
+  }, [quiz, shuffledQuestions, answers, submitted, navigate, moduleId]);
 
   // Timer effect
   useEffect(() => {
